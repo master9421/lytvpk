@@ -16,6 +16,8 @@ export function LogError(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function MoveWorkshopToAddons(arg1:string):Promise<void>;
 
+export function OpenFileLocation(arg1:string):Promise<void>;
+
 export function ScanVPKFiles():Promise<void>;
 
 export function SearchVPKFiles(arg1:string,arg2:string,arg3:Array<string>):Promise<Array<parser.VPKFile>>;

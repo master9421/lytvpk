@@ -14,6 +14,7 @@ import {
   SelectDirectory,
   ValidateDirectory,
   LaunchL4D2,
+  OpenFileLocation,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn } from '../wailsjs/runtime/runtime';
@@ -127,6 +128,19 @@ function setupEventListeners() {
         showFileDetail(filePath);
       } else {
         console.error('详情按钮缺少 data-file-path 属性');
+      }
+    }
+
+    // 处理打开位置按钮点击
+    const openLocationBtn = e.target.closest('.open-location-btn[data-action="open-location"]');
+    if (openLocationBtn) {
+      console.log('找到打开位置按钮:', openLocationBtn);
+      const filePath = openLocationBtn.getAttribute('data-file-path');
+      if (filePath) {
+        console.log('调用 openFileLocation:', filePath);
+        e.preventDefault();
+        e.stopPropagation();
+        openFileLocation(filePath);
       }
     }
 
@@ -881,6 +895,10 @@ function createFileItem(file) {
                 <span class="btn-icon">🔍</span>
                 <span class="btn-text">详情</span>
             </button>
+            <button class="btn-small action-btn open-location-btn" data-file-path="${file.path}" data-action="open-location" title="打开文件所在位置">
+                <span class="btn-icon">📂</span>
+                <span class="btn-text">位置</span>
+            </button>
             ${getActionButton(file)}
         </div>
     `;
@@ -1285,6 +1303,21 @@ window.moveFileToAddons = async function (filePath) {
   } catch (error) {
     console.error('转移文件失败:', error);
     showError('转移失败: ' + error);
+  }
+};
+
+// 打开文件所在位置（全局函数）
+window.openFileLocation = async function (filePath) {
+  try {
+    console.log('打开文件所在位置:', filePath);
+
+    // 调用后端打开文件位置
+    await OpenFileLocation(filePath);
+
+    showNotification('已打开文件所在位置', 'success');
+  } catch (error) {
+    console.error('打开文件位置失败:', error);
+    showError('打开位置失败: ' + error);
   }
 };
 

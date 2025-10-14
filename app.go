@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	rt "runtime"
 	"strings"
@@ -421,6 +422,44 @@ func (a *App) LaunchL4D2() error {
 
 	// 使用 Wails 的 BrowserOpenURL 方法打开 Steam 链接
 	runtime.BrowserOpenURL(a.ctx, steamURL)
+
+	return nil
+}
+
+// OpenFileLocation 打开文件所在位置
+func (a *App) OpenFileLocation(filePath string) error {
+	if filePath == "" {
+		return fmt.Errorf("文件路径为空")
+	}
+
+	// 检查文件是否存在
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return fmt.Errorf("文件不存在: %s", filePath)
+	}
+
+	// 获取文件所在目录
+	dir := filepath.Dir(filePath)
+
+	// 根据操作系统打开文件管理器
+	var cmd *exec.Cmd
+	switch rt.GOOS {
+	case "windows":
+		// Windows: 使用 explorer 并选中文件
+		cmd = exec.Command("explorer", "/select,", filePath)
+	case "darwin":
+		// macOS: 使用 open 并选中文件
+		cmd = exec.Command("open", "-R", filePath)
+	case "linux":
+		// Linux: 使用 xdg-open 打开目录（大部分 Linux 文件管理器不支持选中文件）
+		cmd = exec.Command("xdg-open", dir)
+	default:
+		return fmt.Errorf("不支持的操作系统: %s", rt.GOOS)
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("打开文件位置失败: %s", err.Error())
+	}
 
 	return nil
 }

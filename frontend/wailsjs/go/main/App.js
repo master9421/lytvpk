@@ -30,6 +30,10 @@ export function MoveWorkshopToAddons(arg1) {
   return window['go']['main']['App']['MoveWorkshopToAddons'](arg1);
 }
 
+export function OpenFileLocation(arg1) {
+  return window['go']['main']['App']['OpenFileLocation'](arg1);
+}
+
 export function ScanVPKFiles() {
   return window['go']['main']['App']['ScanVPKFiles']();
 }
