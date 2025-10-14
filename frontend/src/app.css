@@ -695,7 +695,7 @@ body {
 
 .file-list-header {
   display: grid;
-  grid-template-columns: 3rem minmax(15rem, 2fr) 7rem 6rem 7rem minmax(16rem, 1fr) 8rem;
+  grid-template-columns: 3rem minmax(13rem, 1.75fr) 7rem 6rem 7rem minmax(18rem, 1.5fr) 8rem;
   gap: var(--spacing-3);
   padding: var(--spacing-3) var(--spacing-4);
   background: var(--bg-surface);
@@ -726,7 +726,7 @@ body {
 /* 现代化文件项 */
 .file-item {
   display: grid;
-  grid-template-columns: 3rem minmax(15rem, 2fr) 7rem 6rem 7rem minmax(16rem, 1fr) 8rem;
+  grid-template-columns: 3rem minmax(13rem, 1.75fr) 7rem 6rem 7rem minmax(18rem, 1.5fr) 8rem;
   gap: var(--spacing-3);
   padding: var(--spacing-3);
   border-bottom: 1px solid var(--border-default);
@@ -1588,7 +1588,7 @@ body {
 @media (max-width: 1024px) {
   .file-list-header,
   .file-item {
-    grid-template-columns: 2.5rem minmax(12rem, 1fr) 5rem 5rem minmax(10rem, 1fr) 8rem;
+    grid-template-columns: 2.5rem minmax(11rem, 1fr) 5rem 5rem minmax(11rem, 1.25fr) 8rem;
     font-size: var(--text-sm);
   }
   

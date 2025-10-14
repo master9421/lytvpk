@@ -17,7 +17,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "LytVPK MOD管理器 v1.0.1",
+		Title:  "LytVPK MOD管理器 v1.0.2",
 		Width:  1400,
 		Height: 900,
 		AssetServer: &assetserver.Options{
@@ -25,7 +25,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
-		Bind: []interface{}{
+		Bind: []any{
 			app,
 		},
 	})
