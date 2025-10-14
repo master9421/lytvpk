@@ -13,6 +13,7 @@ import {
   GetSecondaryTags,
   SelectDirectory,
   ValidateDirectory,
+  LaunchL4D2,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn } from '../wailsjs/runtime/runtime';
@@ -82,6 +83,9 @@ function setupEventListeners() {
 
   // 重置筛选按钮
   document.getElementById('reset-filter-btn').addEventListener('click', resetFilters);
+
+  // 启动L4D2按钮
+  document.getElementById('launch-l4d2-btn').addEventListener('click', launchL4D2);
 
   // 关于信息按钮
   document.getElementById('info-btn').addEventListener('click', showInfoModal);
@@ -340,6 +344,17 @@ async function selectDirectory() {
   } catch (error) {
     console.error('选择目录失败:', error);
     showError('设置目录失败: ' + error);
+  }
+}
+
+// 启动L4D2
+async function launchL4D2() {
+  try {
+    await LaunchL4D2();
+    showNotification('正在启动 Left 4 Dead 2...', 'success');
+  } catch (error) {
+    console.error('启动L4D2失败:', error);
+    showNotification('启动游戏失败: ' + error, 'error');
   }
 }
 

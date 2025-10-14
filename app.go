@@ -413,3 +413,14 @@ func (a *App) ValidateDirectory(path string) error {
 
 	return nil
 }
+
+// LaunchL4D2 启动L4D2游戏
+func (a *App) LaunchL4D2() error {
+	// 使用 Steam 协议启动游戏
+	steamURL := "steam://rungameid/550"
+
+	// 使用 Wails 的 BrowserOpenURL 方法打开 Steam 链接
+	runtime.BrowserOpenURL(a.ctx, steamURL)
+
+	return nil
+}

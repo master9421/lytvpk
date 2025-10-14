@@ -18,6 +18,10 @@ export function GetVPKFiles() {
   return window['go']['main']['App']['GetVPKFiles']();
 }
 
+export function LaunchL4D2() {
+  return window['go']['main']['App']['LaunchL4D2']();
+}
+
 export function LogError(arg1, arg2, arg3) {
   return window['go']['main']['App']['LogError'](arg1, arg2, arg3);
 }

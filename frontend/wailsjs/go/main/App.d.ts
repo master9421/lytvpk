@@ -10,6 +10,8 @@ export function GetSecondaryTags(arg1:string):Promise<Array<string>>;
 
 export function GetVPKFiles():Promise<Array<parser.VPKFile>>;
 
+export function LaunchL4D2():Promise<void>;
+
 export function LogError(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function MoveWorkshopToAddons(arg1:string):Promise<void>;
