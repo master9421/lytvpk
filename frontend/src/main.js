@@ -1250,6 +1250,20 @@ window.showFileDetail = function (filePath) {
 
   console.log('显示模态框...');
   modal.classList.remove('hidden');
+  
+  // 将模态框内容滚动到顶部（使用 setTimeout 确保 DOM 更新后执行）
+  setTimeout(() => {
+    const modalContent = modal.querySelector('.modal-content');
+    const modalBody = modal.querySelector('.modal-body');
+    
+    if (modalContent) {
+      modalContent.scrollTop = 0;
+    }
+    if (modalBody) {
+      modalBody.scrollTop = 0;
+    }
+  }, 0);
+  
   console.log('模态框已显示, 当前类:', modal.className);
   console.log('=== showFileDetail 执行完成 ===');
 };
