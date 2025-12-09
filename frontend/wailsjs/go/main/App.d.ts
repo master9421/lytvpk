@@ -9,6 +9,8 @@ export function ClearCompletedTasks():Promise<void>;
 
 export function DeleteVPKFile(arg1:string):Promise<void>;
 
+export function ExtractVPKFromZip(arg1:string,arg2:string):Promise<void>;
+
 export function ForceExit():Promise<void>;
 
 export function GetDownloadTasks():Promise<Array<main.DownloadTask>>;

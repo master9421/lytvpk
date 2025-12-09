@@ -1,8 +1,10 @@
 package main
 
 import (
+	"archive/zip"
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -613,6 +615,73 @@ func (a *App) DeleteVPKFile(filePath string) error {
 	err := trash.Throw(filePath)
 	if err != nil {
 		return fmt.Errorf("删除文件失败: %s", err.Error())
+	}
+
+	return nil
+}
+
+// ExtractVPKFromZip 从ZIP文件中解压所有VPK文件到指定目录
+func (a *App) ExtractVPKFromZip(zipPath string, destDir string) error {
+	// 打开ZIP文件
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return fmt.Errorf("无法打开ZIP文件: %v", err)
+	}
+	defer r.Close()
+
+	extractedCount := 0
+
+	// 遍历ZIP中的所有文件
+	for _, f := range r.File {
+		// 检查是否为VPK文件（忽略大小写）
+		if strings.HasSuffix(strings.ToLower(f.Name), ".vpk") {
+			// 构建目标路径
+			// 注意：这里我们只取文件名，忽略ZIP中的目录结构，直接解压到destDir
+			targetPath := filepath.Join(destDir, filepath.Base(f.Name))
+
+			// 检查目标文件是否已存在，如果存在则重命名（避免覆盖）
+			if _, err := os.Stat(targetPath); err == nil {
+				fileName := filepath.Base(f.Name)
+				ext := filepath.Ext(fileName)
+				name := strings.TrimSuffix(fileName, ext)
+				targetPath = filepath.Join(destDir, fmt.Sprintf("%s_%d%s", name, time.Now().Unix(), ext))
+			}
+
+			// 打开ZIP中的文件
+			rc, err := f.Open()
+			if err != nil {
+				log.Printf("无法打开ZIP中的文件 %s: %v", f.Name, err)
+				continue
+			}
+
+			// 创建目标文件
+			outFile, err := os.Create(targetPath)
+			if err != nil {
+				rc.Close()
+				log.Printf("无法创建目标文件 %s: %v", targetPath, err)
+				continue
+			}
+
+			// 复制内容
+			_, err = io.Copy(outFile, rc)
+
+			// 关闭文件
+			outFile.Close()
+			rc.Close()
+
+			if err != nil {
+				log.Printf("解压文件 %s 失败: %v", f.Name, err)
+				os.Remove(targetPath) // 删除解压失败的文件
+				continue
+			}
+
+			extractedCount++
+			log.Printf("已解压: %s -> %s", f.Name, targetPath)
+		}
+	}
+
+	if extractedCount == 0 {
+		return fmt.Errorf("ZIP文件中未找到VPK文件")
 	}
 
 	return nil

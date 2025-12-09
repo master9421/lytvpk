@@ -276,9 +276,7 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url s
 	updateStatus := func(status string, err string) {
 		taskManager.mu.Lock()
 		task.Status = status
-		if err != "" {
-			task.Error = err
-		}
+		task.Error = err
 		taskManager.mu.Unlock()
 		runtime.EventsEmit(a.ctx, "task_updated", task)
 	}
@@ -491,6 +489,20 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url s
 	if err := os.Rename(tempPath, targetPath); err != nil {
 		updateStatus("failed", "Rename failed: "+err.Error())
 		return
+	}
+
+	// 如果是直连下载且是ZIP文件，自动解压
+	if strings.HasPrefix(task.WorkshopID, "direct-") && strings.HasSuffix(strings.ToLower(targetPath), ".zip") {
+		updateStatus("downloading", "正在解压...")
+		err := a.ExtractVPKFromZip(targetPath, a.rootDir)
+		if err != nil {
+			// 解压失败不影响下载成功的状态，但记录错误
+			fmt.Printf("解压ZIP失败: %v\n", err)
+		} else {
+			// 解压成功，可以选择删除ZIP文件，或者保留
+			// 这里我们保留ZIP文件，让用户自己决定
+			fmt.Printf("自动解压完成: %s\n", targetPath)
+		}
 	}
 
 	updateStatus("completed", "")

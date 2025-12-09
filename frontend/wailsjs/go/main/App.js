@@ -14,6 +14,10 @@ export function DeleteVPKFile(arg1) {
   return window['go']['main']['App']['DeleteVPKFile'](arg1);
 }
 
+export function ExtractVPKFromZip(arg1, arg2) {
+  return window['go']['main']['App']['ExtractVPKFromZip'](arg1, arg2);
+}
+
 export function ForceExit() {
   return window['go']['main']['App']['ForceExit']();
 }
