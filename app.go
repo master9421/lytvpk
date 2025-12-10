@@ -620,6 +620,37 @@ func (a *App) DeleteVPKFile(filePath string) error {
 	return nil
 }
 
+// DeleteVPKFiles 批量删除VPK文件到回收站
+func (a *App) DeleteVPKFiles(filePaths []string) error {
+	if len(filePaths) == 0 {
+		return fmt.Errorf("文件列表为空")
+	}
+
+	var errs []string
+	for _, filePath := range filePaths {
+		if filePath == "" {
+			continue
+		}
+		// 检查文件是否存在
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			errs = append(errs, fmt.Sprintf("文件不存在: %s", filePath))
+			continue
+		}
+
+		// 使用 trash 库删除文件到回收站
+		err := trash.Throw(filePath)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("删除文件 %s 失败: %v", filePath, err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("批量删除部分失败:\n%s", strings.Join(errs, "\n"))
+	}
+
+	return nil
+}
+
 // ExtractVPKFromZip 从ZIP文件中解压所有VPK文件到指定目录
 func (a *App) ExtractVPKFromZip(zipPath string, destDir string) error {
 	// 打开ZIP文件

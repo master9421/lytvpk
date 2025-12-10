@@ -23,6 +23,7 @@ import {
   RetryDownloadTask,
   ForceExit,
   DeleteVPKFile,
+  DeleteVPKFiles,
   HandleFileDrop,
 } from '../wailsjs/go/main/App';
 
@@ -91,6 +92,7 @@ function setupEventListeners() {
   document.getElementById('deselect-all-btn').addEventListener('click', deselectAll);
   document.getElementById('enable-selected-btn').addEventListener('click', enableSelected);
   document.getElementById('disable-selected-btn').addEventListener('click', disableSelected);
+  document.getElementById('delete-selected-btn').addEventListener('click', deleteSelected);
 
   // 重置筛选按钮
   document.getElementById('reset-filter-btn').addEventListener('click', resetFilters);
@@ -1433,6 +1435,39 @@ async function disableSelected() {
     console.error('批量禁用失败:', error);
     showError('批量禁用失败: ' + error);
   }
+}
+
+// 批量删除选中的文件
+async function deleteSelected() {
+  if (appState.selectedFiles.size === 0) {
+    alert('请先选择文件');
+    return;
+  }
+
+  showConfirmModal(
+    '确认批量删除',
+    `确定要删除选中的 ${appState.selectedFiles.size} 个文件吗？文件将被移动到回收站。`,
+    async () => {
+      const filesToDelete = Array.from(appState.selectedFiles);
+
+      try {
+        console.log(`批量删除 ${filesToDelete.length} 个文件...`);
+        
+        await DeleteVPKFiles(filesToDelete);
+        
+        // 从选中集合中移除
+        filesToDelete.forEach(filePath => appState.selectedFiles.delete(filePath));
+        
+        // 刷新列表
+        await refreshFilesKeepFilter();
+        
+        showNotification(`成功删除 ${filesToDelete.length} 个文件`, 'success');
+      } catch (error) {
+        console.error('批量删除失败:', error);
+        showError('批量删除失败: ' + error);
+      }
+    }
+  );
 }
 
 // 更新状态栏
