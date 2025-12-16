@@ -27,6 +27,7 @@ import {
   HandleFileDrop,
   ConnectToServer,
   FetchServerInfo,
+  ExportServersToFile,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn, OnFileDrop, BrowserOpenURL } from '../wailsjs/runtime/runtime';
@@ -2341,6 +2342,34 @@ function setupServerModalListeners() {
       });
   }
 
+  // 数据管理折叠
+  document.getElementById('toggle-data-mgmt-btn').addEventListener('click', () => {
+    const container = document.getElementById('server-data-container');
+    const icon = document.querySelector('#toggle-data-mgmt-btn .icon');
+    container.classList.toggle('hidden');
+    icon.textContent = container.classList.contains('hidden') ? '▼' : '▲';
+  });
+
+  // 数据导入导出
+  document.getElementById('export-clipboard-btn').addEventListener('click', exportServersToClipboard);
+  document.getElementById('export-file-btn').addEventListener('click', exportServersToFile);
+  document.getElementById('import-clipboard-btn').addEventListener('click', importServersFromClipboard);
+  
+  const fileInput = document.getElementById('import-file-input');
+  document.getElementById('import-file-btn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          importServers(event.target.result);
+          fileInput.value = ''; // 重置以便再次选择同一文件
+      };
+      reader.onerror = () => showError('读取文件失败');
+      reader.readAsText(file);
+  });
+
   // 全局删除按钮事件
   document.getElementById('global-delete-server-btn').addEventListener('click', (e) => {
     const dropdown = document.getElementById('global-dropdown');
@@ -2678,4 +2707,81 @@ function connectServer(address) {
     console.error('连接服务器失败:', err);
     alert('连接服务器失败: ' + err);
   });
+}
+
+function exportServersToClipboard() {
+  const servers = getServers();
+  const json = JSON.stringify(servers, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    showNotification('服务器配置已复制到剪贴板', 'success');
+  }).catch(err => {
+    console.error('复制失败:', err);
+    showError('复制失败: ' + err);
+  });
+}
+
+function exportServersToFile() {
+  const servers = getServers();
+  const json = JSON.stringify(servers, null, 2);
+  
+  ExportServersToFile(json).then((path) => {
+      if (path) {
+          showNotification('服务器配置已导出', 'success');
+      }
+  }).catch(err => {
+      console.error('导出失败:', err);
+      showError('导出失败: ' + err);
+  });
+}
+
+async function importServersFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) {
+        showError('剪贴板为空');
+        return;
+    }
+    importServers(text);
+  } catch (err) {
+    console.error('读取剪贴板失败:', err);
+    showError('无法读取剪贴板: ' + err);
+  }
+}
+
+function importServers(jsonStr) {
+  try {
+    const newServers = JSON.parse(jsonStr);
+    if (!Array.isArray(newServers)) {
+        throw new Error('数据格式错误: 必须是服务器数组');
+    }
+    
+    const currentServers = getServers();
+    let addedCount = 0;
+    
+    newServers.forEach(server => {
+        if (server.name && server.address) {
+            // 检查是否存在
+            const existingIndex = currentServers.findIndex(s => s.address === server.address);
+            
+            if (existingIndex === -1) {
+                currentServers.push({
+                    name: server.name,
+                    address: server.address
+                });
+                addedCount++;
+            }
+        }
+    });
+    
+    if (addedCount > 0) {
+        saveServers(currentServers);
+        renderServers();
+        showNotification(`成功导入 ${addedCount} 个新服务器`, 'success');
+    } else {
+        showNotification('没有发现新的服务器配置', 'info');
+    }
+  } catch (e) {
+    console.error('导入失败:', e);
+    showError('导入失败: ' + e.message);
+  }
 }

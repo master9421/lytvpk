@@ -2182,18 +2182,14 @@ body {
 }
 
 .server-list-container {
-  /* max-height: 400px; */
-  /* overflow-y: auto; */
-  flex: 1;
-  overflow-y: auto;
   min-height: 200px;
+  height: auto;
 }
 
 .server-modal-content .modal-body {
-    display: flex;
-    flex-direction: column;
+    display: block;
     max-height: 70vh;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .server-list {

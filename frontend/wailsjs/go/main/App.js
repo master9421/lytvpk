@@ -22,6 +22,10 @@ export function DeleteVPKFiles(arg1) {
   return window['go']['main']['App']['DeleteVPKFiles'](arg1);
 }
 
+export function ExportServersToFile(arg1) {
+  return window['go']['main']['App']['ExportServersToFile'](arg1);
+}
+
 export function ExtractVPKFromZip(arg1, arg2) {
   return window['go']['main']['App']['ExtractVPKFromZip'](arg1, arg2);
 }

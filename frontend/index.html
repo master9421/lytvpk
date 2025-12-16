@@ -362,6 +362,28 @@
                 </div>
               </div>
             </div>
+
+            <div class="server-data-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-light);">
+              <div class="server-data-header" id="toggle-data-mgmt-btn" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">数据管理</h3>
+                <span class="icon">▼</span>
+              </div>
+              <div id="server-data-container" class="server-data-actions hidden" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="export-clipboard-btn" class="btn btn-small btn-outline" title="导出到剪贴板">
+                  <span class="icon">📋</span> 复制配置
+                </button>
+                <button id="export-file-btn" class="btn btn-small btn-outline" title="导出到文件">
+                  <span class="icon">💾</span> 导出文件
+                </button>
+                <button id="import-clipboard-btn" class="btn btn-small btn-outline" title="从剪贴板导入">
+                  <span class="icon">📋</span> 粘贴导入
+                </button>
+                <button id="import-file-btn" class="btn btn-small btn-outline" title="从文件导入">
+                  <span class="icon">📂</span> 文件导入
+                </button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+              </div>
+            </div>
           </div>
         </div>
       </div>

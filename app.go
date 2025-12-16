@@ -992,3 +992,27 @@ func (a *App) installVPKFile(srcPath string) error {
 	log.Printf("已安装: %s -> %s", srcPath, destPath)
 	return nil
 }
+
+// ExportServersToFile 导出服务器列表到文件
+func (a *App) ExportServersToFile(jsonContent string) (string, error) {
+	selection, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "导出服务器列表",
+		DefaultFilename: "lytvpk_servers.json",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
+			},
+		},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if selection == "" {
+		return "", nil // 用户取消
+	}
+
+	return selection, os.WriteFile(selection, []byte(jsonContent), 0644)
+}
