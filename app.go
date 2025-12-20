@@ -18,6 +18,11 @@ import (
 	"vpk-manager/parser"
 
 	"encoding/json"
+
+	"bytes"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 	"net/http"
 	"net/url"
 
@@ -712,16 +717,28 @@ func (a *App) ExtractVPKFromZip(zipPath string, destDir string) error {
 
 	// 遍历ZIP中的所有文件
 	for _, f := range r.File {
+		// 处理文件名编码
+		filename := f.Name
+		if f.Flags&0x800 == 0 {
+			// 尝试将 GBK 转换为 UTF-8
+			i := bytes.NewReader([]byte(f.Name))
+			decoder := transform.NewReader(i, simplifiedchinese.GB18030.NewDecoder())
+			content, err := io.ReadAll(decoder)
+			if err == nil {
+				filename = string(content)
+			}
+		}
+
 		// 检查是否为VPK文件（忽略大小写）
-		if strings.HasSuffix(strings.ToLower(f.Name), ".vpk") {
+		if strings.HasSuffix(strings.ToLower(filename), ".vpk") {
 			// 构建目标路径
 			// 注意：这里我们只取文件名，忽略ZIP中的目录结构，直接解压到destDir
-			targetPath := filepath.Join(destDir, filepath.Base(f.Name))
+			targetPath := filepath.Join(destDir, filepath.Base(filename))
 
 			// 打开ZIP中的文件
 			rc, err := f.Open()
 			if err != nil {
-				log.Printf("无法打开ZIP中的文件 %s: %v", f.Name, err)
+				log.Printf("无法打开ZIP中的文件 %s: %v", filename, err)
 				continue
 			}
 
@@ -741,13 +758,13 @@ func (a *App) ExtractVPKFromZip(zipPath string, destDir string) error {
 			rc.Close()
 
 			if err != nil {
-				log.Printf("解压文件 %s 失败: %v", f.Name, err)
+				log.Printf("解压文件 %s 失败: %v", filename, err)
 				os.Remove(targetPath) // 删除解压失败的文件
 				continue
 			}
 
 			extractedCount++
-			log.Printf("已解压: %s -> %s", f.Name, targetPath)
+			log.Printf("已解压: %s -> %s", filename, targetPath)
 		}
 	}
 
