@@ -1508,7 +1508,7 @@ body {
 .success-notification,
 .info-notification {
   position: fixed;
-  top: var(--spacing-20);
+  top: var(--spacing-16);
   right: var(--spacing-4);
   z-index: var(--z-toast);
   min-width: 20rem;
@@ -1522,15 +1522,18 @@ body {
 }
 
 .error-notification {
-  background: linear-gradient(135deg, var(--danger) 0%, var(--danger-light) 100%);
+  background: var(--bg-app);
+  border-bottom: 4px solid var(--danger);
 }
 
 .success-notification {
-  background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+  background: var(--bg-app);
+  border-bottom: 4px solid var(--success);
 }
 
 .info-notification {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--primary-light) 100%);
+  background: var(--bg-app);
+  border-bottom: 4px solid var(--accent);
 }
 
 .error-content,
@@ -1539,8 +1542,8 @@ body {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-3);
-  padding: var(--spacing-4);
-  color: white;
+  padding: var(--spacing-6) var(--spacing-5);
+  color: var(--text-primary);
 }
 
 .error-icon,
@@ -1564,20 +1567,22 @@ body {
 .info-close {
   background: none;
   border: none;
-  color: white;
+  color: var(--text-secondary);
   font-size: var(--text-lg);
   cursor: pointer;
   padding: var(--spacing-1);
   border-radius: var(--radius-md);
   transition: background var(--duration-150) var(--ease-out);
   flex-shrink: 0;
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 .error-close:hover,
 .success-close:hover,
 .info-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--bg-hover);
+  opacity: 1;
+}
   opacity: 1;
 }
 
