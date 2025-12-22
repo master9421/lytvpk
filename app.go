@@ -956,7 +956,18 @@ type PlayerInfo struct {
 
 // FetchPlayerList 获取服务器玩家列表
 func (a *App) FetchPlayerList(address string) ([]PlayerInfo, error) {
-	return queryA2SPlayers(address)
+	var lastErr error
+	for i := 0; i < 3; i++ {
+		players, err := queryA2SPlayers(address)
+		if err == nil {
+			return players, nil
+		}
+		lastErr = err
+		if i < 2 {
+			time.Sleep(time.Duration(200*(i+1)) * time.Millisecond)
+		}
+	}
+	return nil, fmt.Errorf("查询玩家列表失败(重试3次): %v", lastErr)
 }
 
 // queryA2SPlayers 使用 UDP 协议查询服务器玩家列表
@@ -1107,13 +1118,22 @@ func queryA2S(address string) (*ServerInfo, error) {
 		challenge := resp[5:9]
 
 		// Resend query with challenge
-		reqWithChallenge := append(req, challenge...)
+		// 注意：这里必须创建一个新的切片，因为 req 是字面量，append 可能会修改底层数组（虽然这里长度固定，但为了安全）
+		// 实际上 req 是 []byte{...}，len=25, cap=25。append 会分配新数组。
+		// 但是为了绝对安全，我们显式复制
+		reqWithChallenge := make([]byte, len(req)+len(challenge))
+		copy(reqWithChallenge, req)
+		copy(reqWithChallenge[len(req):], challenge)
+
 		_, err = conn.Write(reqWithChallenge)
 		if err != nil {
 			return nil, err
 		}
 
 		// Read response again
+		// 必须重置缓冲区，否则旧数据可能残留（虽然我们用了 resp[:n]）
+		// 关键：如果服务器返回的数据比缓冲区小，resp[:n] 是对的。
+		// 但是如果我们在循环中重用 conn，可能会有问题。这里是单次连接。
 		resp = make([]byte, 65535)
 		n, err = conn.Read(resp)
 		if err != nil {
@@ -1275,12 +1295,20 @@ func queryA2S(address string) (*ServerInfo, error) {
 
 // FetchServerInfo 获取服务器详细信息
 func (a *App) FetchServerInfo(address string) (*ServerInfo, error) {
-	// 使用 UDP 直连查询 (A2S_INFO)
-	info, err := queryA2S(address)
-	if err != nil {
-		return nil, fmt.Errorf("查询服务器失败: %v", err)
+	// 使用 UDP 直连查询 (A2S_INFO) - 增加重试机制
+	var lastErr error
+	for i := 0; i < 3; i++ {
+		info, err := queryA2S(address)
+		if err == nil {
+			return info, nil
+		}
+		lastErr = err
+		// 简单的退避策略
+		if i < 2 {
+			time.Sleep(time.Duration(200*(i+1)) * time.Millisecond)
+		}
 	}
-	return info, nil
+	return nil, fmt.Errorf("查询服务器失败(重试3次): %v", lastErr)
 }
 
 func parseGameMode(gametypeStr string) string {
