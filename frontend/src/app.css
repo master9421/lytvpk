@@ -1508,7 +1508,7 @@ body {
 .success-notification,
 .info-notification {
   position: fixed;
-  top: var(--spacing-4);
+  top: var(--spacing-20);
   right: var(--spacing-4);
   z-index: var(--z-toast);
   min-width: 20rem;
