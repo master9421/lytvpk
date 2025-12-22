@@ -2277,7 +2277,9 @@ function getServers() {
   try {
     const servers = localStorage.getItem(SERVER_CONFIG_KEY);
     const parsed = servers ? JSON.parse(servers) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const list = Array.isArray(parsed) ? parsed : [];
+    // 按权重降序排序
+    return list.sort((a, b) => (b.weight || 0) - (a.weight || 0));
   } catch (e) {
     console.error('读取服务器列表失败:', e);
     return [];
@@ -2298,10 +2300,111 @@ function saveSteamApiKey(key) {
   localStorage.setItem(STEAM_API_KEY_STORAGE, key);
 }
 
+// --- 编辑/添加服务器功能 ---
+let currentEditIndex = -1;
+let isEditMode = false;
+
+function openServerFormModal(index = -1) {
+    const modal = document.getElementById('server-form-modal');
+    const title = document.getElementById('server-form-title');
+    const nameInput = document.getElementById('form-server-name');
+    const addressInput = document.getElementById('form-server-address');
+    const weightInput = document.getElementById('form-server-weight');
+
+    // 重置表单
+    nameInput.value = '';
+    addressInput.value = '';
+    weightInput.value = '0';
+
+    if (index >= 0) {
+        // 编辑模式
+        isEditMode = true;
+        currentEditIndex = index;
+        title.textContent = '编辑服务器';
+        
+        const servers = getServers();
+        const server = servers[index];
+        if (server) {
+            nameInput.value = server.name;
+            addressInput.value = server.address;
+            weightInput.value = server.weight || 0;
+        }
+    } else {
+        // 添加模式
+        isEditMode = false;
+        currentEditIndex = -1;
+        title.textContent = '添加服务器';
+    }
+
+    modal.classList.remove('hidden');
+    document.getElementById('global-dropdown').classList.add('hidden');
+}
+
+function closeServerFormModal() {
+    document.getElementById('server-form-modal').classList.add('hidden');
+    currentEditIndex = -1;
+    isEditMode = false;
+}
+
+function saveServerForm() {
+    const name = document.getElementById('form-server-name').value.trim();
+    const address = document.getElementById('form-server-address').value.trim();
+    const weight = parseInt(document.getElementById('form-server-weight').value) || 0;
+
+    if (!name || !address) {
+        showError('请输入服务器名称和地址');
+        return;
+    }
+
+    const servers = getServers();
+
+    if (isEditMode) {
+        // 编辑模式
+        if (currentEditIndex >= 0 && currentEditIndex < servers.length) {
+            servers[currentEditIndex] = { ...servers[currentEditIndex], name, address, weight };
+            saveServers(servers);
+            showNotification('服务器修改成功', 'success');
+        }
+    } else {
+        // 添加模式
+        servers.push({ name, address, weight });
+        saveServers(servers);
+        showNotification('服务器添加成功', 'success');
+    }
+
+    renderServers();
+    closeServerFormModal();
+
+    // 如果有API Key，尝试刷新该服务器信息
+    const apiKey = getSteamApiKey();
+    if (apiKey) {
+        // 重新获取列表以找到新位置（因为可能排序了）
+        const newServers = getServers();
+        const newIndex = newServers.findIndex(s => s.address === address && s.name === name);
+        if (newIndex !== -1) {
+            fetchServerInfo(address, newIndex);
+        }
+    }
+}
+
 function setupServerModalListeners() {
   document.getElementById('close-server-modal-btn').addEventListener('click', closeServerModal);
-  document.getElementById('add-server-btn').addEventListener('click', addServer);
+  document.getElementById('open-add-server-modal-btn').addEventListener('click', () => openServerFormModal(-1));
   
+  // 编辑/添加服务器相关
+  document.getElementById('close-server-form-modal-btn').addEventListener('click', closeServerFormModal);
+  document.getElementById('cancel-server-form-btn').addEventListener('click', closeServerFormModal);
+  document.getElementById('save-server-form-btn').addEventListener('click', saveServerForm);
+  
+  document.getElementById('global-edit-server-btn').addEventListener('click', () => {
+      const dropdown = document.getElementById('global-dropdown');
+      const index = parseInt(dropdown.dataset.index);
+      if (!isNaN(index)) {
+          openServerFormModal(index);
+      }
+  });
+
+
   // API Key 设置相关
   document.getElementById('toggle-api-key-btn').addEventListener('click', () => {
     const container = document.getElementById('api-key-container');
@@ -2599,51 +2702,10 @@ async function fetchServerInfo(address, index) {
   }
 }
 
+// function addServer() { ... } 已被整合到 saveServerForm 中，此处保留空函数或删除以避免引用错误
+// 但为了安全起见，如果还有其他地方调用 addServer，可以保留一个兼容版本
 function addServer() {
-  console.log('addServer called');
-  try {
-    const nameInput = document.getElementById('server-name-input');
-    const addressInput = document.getElementById('server-address-input');
-    
-    if (!nameInput || !addressInput) {
-        console.error('Input elements not found');
-        return;
-    }
-    
-    const name = nameInput.value.trim();
-    const address = addressInput.value.trim();
-
-    if (!name || !address) {
-      showError('请输入服务器名称和地址');
-      return;
-    }
-
-    const servers = getServers();
-    servers.push({ name, address });
-    saveServers(servers);
-    
-    nameInput.value = '';
-    addressInput.value = '';
-    
-    // 仅添加新服务器到列表，而不是重新渲染所有
-    const list = document.getElementById('server-list');
-    const index = servers.length - 1;
-    const server = servers[index];
-    const apiKey = getSteamApiKey();
-    
-    const li = createServerListItem(server, index, apiKey);
-    list.appendChild(li);
-    
-    // 如果有API Key，获取新服务器的信息
-    if (apiKey) {
-        fetchServerInfo(server.address, index);
-    }
-
-    showNotification('服务器添加成功', 'success');
-  } catch (e) {
-    console.error('添加服务器失败:', e);
-    showError('添加服务器失败: ' + e.message);
-  }
+    openServerFormModal(-1);
 }
 
 function deleteServer(index) {
@@ -2766,7 +2828,8 @@ function importServers(jsonStr) {
             if (existingIndex === -1) {
                 currentServers.push({
                     name: server.name,
-                    address: server.address
+                    address: server.address,
+                    weight: server.weight || 0
                 });
                 addedCount++;
             }
