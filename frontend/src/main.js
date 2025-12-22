@@ -2290,16 +2290,6 @@ function saveServers(servers) {
   localStorage.setItem(SERVER_CONFIG_KEY, JSON.stringify(servers));
 }
 
-const STEAM_API_KEY_STORAGE = 'steam-api-key';
-
-function getSteamApiKey() {
-  return localStorage.getItem(STEAM_API_KEY_STORAGE) || '';
-}
-
-function saveSteamApiKey(key) {
-  localStorage.setItem(STEAM_API_KEY_STORAGE, key);
-}
-
 // --- 编辑/添加服务器功能 ---
 let currentEditIndex = -1;
 let isEditMode = false;
@@ -2375,15 +2365,12 @@ function saveServerForm() {
     renderServers();
     closeServerFormModal();
 
-    // 如果有API Key，尝试刷新该服务器信息
-    const apiKey = getSteamApiKey();
-    if (apiKey) {
-        // 重新获取列表以找到新位置（因为可能排序了）
-        const newServers = getServers();
-        const newIndex = newServers.findIndex(s => s.address === address && s.name === name);
-        if (newIndex !== -1) {
-            fetchServerInfo(address, newIndex);
-        }
+    // 尝试刷新该服务器信息
+    // 重新获取列表以找到新位置（因为可能排序了）
+    const newServers = getServers();
+    const newIndex = newServers.findIndex(s => s.address === address && s.name === name);
+    if (newIndex !== -1) {
+        fetchServerInfo(address, newIndex);
     }
 }
 
@@ -2403,47 +2390,6 @@ function setupServerModalListeners() {
           openServerFormModal(index);
       }
   });
-
-
-  // API Key 设置相关
-  document.getElementById('toggle-api-key-btn').addEventListener('click', () => {
-    const container = document.getElementById('api-key-container');
-    const icon = document.querySelector('#toggle-api-key-btn .icon');
-    container.classList.toggle('hidden');
-    icon.textContent = container.classList.contains('hidden') ? '▼' : '▲';
-  });
-
-  document.getElementById('save-api-key-btn').addEventListener('click', () => {
-    const input = document.getElementById('steam-api-key-input');
-    const key = input.value.trim();
-    
-    saveSteamApiKey(key);
-    
-    const refreshBtn = document.getElementById('refresh-all-servers-btn');
-    if (refreshBtn) {
-        if (key) {
-            refreshBtn.classList.remove('hidden');
-        } else {
-            refreshBtn.classList.add('hidden');
-        }
-    }
-
-    if (!key) {
-        showNotification('Steam API Key 已清除', 'info');
-    } else {
-        showNotification('Steam API Key 已保存', 'success');
-    }
-    
-    renderServers(); // 重新渲染以更新显示状态
-  });
-
-  // 获取 API Key 按钮
-  const getApiKeyBtn = document.getElementById('get-api-key-btn');
-  if (getApiKeyBtn) {
-      getApiKeyBtn.addEventListener('click', () => {
-          BrowserOpenURL('https://steamcommunity.com/dev/apikey');
-      });
-  }
 
   // 数据管理折叠
   document.getElementById('toggle-data-mgmt-btn').addEventListener('click', () => {
@@ -2512,26 +2458,10 @@ function openServerModal() {
   const modal = document.getElementById('server-modal');
   modal.classList.remove('hidden');
   
-  // 填充 API Key
-  const apiKey = getSteamApiKey();
-  document.getElementById('steam-api-key-input').value = apiKey;
-  
-  // 控制刷新按钮显示
-  const refreshBtn = document.getElementById('refresh-all-servers-btn');
-  if (refreshBtn) {
-      if (apiKey) {
-          refreshBtn.classList.remove('hidden');
-      } else {
-          refreshBtn.classList.add('hidden');
-      }
-  }
-  
   renderServers();
 
-  // 如果有API Key，自动刷新所有服务器信息
-  if (apiKey) {
-      refreshAllServers();
-  }
+  // 自动刷新所有服务器信息
+  refreshAllServers();
 }
 
 function closeServerModal() {
@@ -2542,34 +2472,27 @@ function closeServerModal() {
 function renderServers() {
   const servers = getServers();
   const list = document.getElementById('server-list');
-  const apiKey = getSteamApiKey();
   list.innerHTML = '';
 
   servers.forEach((server, index) => {
-    const li = createServerListItem(server, index, apiKey);
+    const li = createServerListItem(server, index);
     list.appendChild(li);
     
-    // 初始渲染时，如果有API Key，也需要获取信息
-    if (apiKey) {
-        fetchServerInfo(server.address, index);
-    }
+    // 初始渲染时，获取信息
+    fetchServerInfo(server.address, index);
   });
 }
 
-function createServerListItem(server, index, apiKey) {
+function createServerListItem(server, index) {
     const li = document.createElement('li');
     li.className = 'server-item';
     li.dataset.address = server.address;
     
-    let detailsHtml = '';
-
-    if (apiKey) {
-      detailsHtml = `
+    let detailsHtml = `
         <div class="server-details" id="server-details-${index}">
           <span style="font-size: 0.85em; color: var(--text-tertiary);">加载中...</span>
         </div>
       `;
-    }
 
     li.innerHTML = `
       <div class="server-info">
@@ -2636,8 +2559,6 @@ function createServerListItem(server, index, apiKey) {
 
 function refreshAllServers() {
     const servers = getServers();
-    const apiKey = getSteamApiKey();
-    if (!apiKey) return;
     
     const btn = document.getElementById('refresh-all-servers-btn');
     if(btn) {
@@ -2658,9 +2579,6 @@ function refreshAllServers() {
 }
 
 async function fetchServerInfo(address, index) {
-  const apiKey = getSteamApiKey();
-  if (!apiKey) return;
-
   let detailsContainer = null;
   
   // 优先通过地址查找，以避免索引变化导致的错位
@@ -2681,7 +2599,7 @@ async function fetchServerInfo(address, index) {
   if (!detailsContainer) return;
 
   try {
-    const info = await FetchServerInfo(address, apiKey);
+    const info = await FetchServerInfo(address);
     
     // 再次检查元素是否存在（防止异步期间被删除）
     if (!document.body.contains(detailsContainer)) return;

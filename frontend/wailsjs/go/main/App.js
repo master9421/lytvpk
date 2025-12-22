@@ -42,8 +42,8 @@ export function ExtractVPKFromZip(arg1, arg2) {
   return window['go']['main']['App']['ExtractVPKFromZip'](arg1, arg2);
 }
 
-export function FetchServerInfo(arg1, arg2) {
-  return window['go']['main']['App']['FetchServerInfo'](arg1, arg2);
+export function FetchServerInfo(arg1) {
+  return window['go']['main']['App']['FetchServerInfo'](arg1);
 }
 
 export function ForceExit() {

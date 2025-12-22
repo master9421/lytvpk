@@ -18,7 +18,8 @@ import (
 	"vpk-manager/parser"
 
 	"bytes"
-
+	"encoding/binary"
+	"net"
 	"net/http"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -45,21 +46,6 @@ type ServerInfo struct {
 	MaxPlayers int    `json:"max_players"`
 	GameDir    string `json:"gamedir"`
 	Mode       string `json:"mode"`
-}
-
-// SteamServerResponse Steam API 响应结构
-type SteamServerResponse struct {
-	Response struct {
-		Servers []struct {
-			Addr       string `json:"addr"`
-			Name       string `json:"name"`
-			Players    int    `json:"players"`
-			MaxPlayers int    `json:"max_players"`
-			Map        string `json:"map"`
-			GameDir    string `json:"gamedir"`
-			Gametype   string `json:"gametype"`
-		} `json:"servers"`
-	} `json:"response"`
 }
 
 // ProgressInfo 加载进度信息
@@ -960,47 +946,217 @@ func (a *App) HandleFileDrop(paths []string) {
 	}
 }
 
-// FetchServerInfo 获取服务器详细信息
-func (a *App) FetchServerInfo(address string, apiKey string) (*ServerInfo, error) {
-	if apiKey == "" {
-		return nil, fmt.Errorf("API Key为空")
+// queryA2S 使用 UDP 协议直接查询 Source 引擎服务器信息
+func queryA2S(address string) (*ServerInfo, error) {
+	conn, err := net.DialTimeout("udp", address, 3*time.Second)
+	if err != nil {
+		return nil, err
 	}
+	defer conn.Close()
 
-	baseURL := "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
+	conn.SetDeadline(time.Now().Add(3 * time.Second))
 
-	var steamResp SteamServerResponse
-
-	resp, err := a.restyClient.R().
-		SetQueryParam("key", apiKey).
-		SetQueryParam("filter", fmt.Sprintf("\\addr\\%s", address)).
-		SetResult(&steamResp).
-		Get(baseURL)
-
+	// TSource Engine Query
+	req := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00}
+	_, err = conn.Write(req)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("steam API返回错误状态: %d", resp.StatusCode())
+	resp := make([]byte, 65535)
+	n, err := conn.Read(resp)
+	if err != nil {
+		return nil, err
+	}
+	resp = resp[:n]
+
+	// Parse response header
+	if n < 5 || !bytes.Equal(resp[:4], []byte{0xFF, 0xFF, 0xFF, 0xFF}) {
+		return nil, fmt.Errorf("invalid response header")
 	}
 
-	if len(steamResp.Response.Servers) == 0 {
-		return nil, fmt.Errorf("未找到服务器信息")
+	// Handle Challenge (0x41 'A')
+	if resp[4] == 0x41 {
+		if n < 9 {
+			return nil, fmt.Errorf("invalid challenge response length")
+		}
+		challenge := resp[5:9]
+
+		// Resend query with challenge
+		reqWithChallenge := append(req, challenge...)
+		_, err = conn.Write(reqWithChallenge)
+		if err != nil {
+			return nil, err
+		}
+
+		// Read response again
+		resp = make([]byte, 65535)
+		n, err = conn.Read(resp)
+		if err != nil {
+			return nil, err
+		}
+		resp = resp[:n]
+
+		// Check header again
+		if n < 5 || !bytes.Equal(resp[:4], []byte{0xFF, 0xFF, 0xFF, 0xFF}) {
+			return nil, fmt.Errorf("invalid response header after challenge")
+		}
 	}
 
-	server := steamResp.Response.Servers[0]
+	if resp[4] != 0x49 { // 'I'
+		return nil, fmt.Errorf("invalid response type: %x", resp[4])
+	}
 
-	// 解析游戏模式
-	mode := parseGameMode(server.Gametype)
+	reader := bytes.NewBuffer(resp[5:])
 
+	readString := func() (string, error) {
+		str, err := reader.ReadString(0x00)
+		if err != nil {
+			return "", err
+		}
+		return str[:len(str)-1], nil
+	}
+
+	// Protocol
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// Name
+	name, err := readString()
+	if err != nil {
+		return nil, err
+	}
+
+	// Map
+	mapName, err := readString()
+	if err != nil {
+		return nil, err
+	}
+
+	// Folder
+	folder, err := readString()
+	if err != nil {
+		return nil, err
+	}
+
+	// Game
+	_, err = readString()
+	if err != nil {
+		return nil, err
+	}
+
+	// ID
+	var id int16
+	err = binary.Read(reader, binary.LittleEndian, &id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Players
+	players, err := reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// MaxPlayers
+	maxPlayers, err := reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// Bots
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// ServerType
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// Environment
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// Visibility
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// VAC
+	_, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+
+	// Version
+	_, err = readString()
+	if err != nil {
+		return nil, err
+	}
+
+	// Extra Data Flag
+	edf, err := reader.ReadByte()
+	if err == nil {
+		if edf&0x80 != 0 {
+			// Port
+			var port int16
+			binary.Read(reader, binary.LittleEndian, &port)
+		}
+		if edf&0x10 != 0 {
+			// SteamID
+			var steamID int64
+			binary.Read(reader, binary.LittleEndian, &steamID)
+		}
+		if edf&0x40 != 0 {
+			// SourceTV
+			var port int16
+			binary.Read(reader, binary.LittleEndian, &port)
+			readString()
+		}
+		if edf&0x20 != 0 {
+			// Keywords (Tags)
+			tags, err := readString()
+			if err == nil {
+				mode := parseGameMode(tags)
+				return &ServerInfo{
+					Name:       name,
+					Map:        mapName,
+					Players:    int(players),
+					MaxPlayers: int(maxPlayers),
+					GameDir:    folder,
+					Mode:       mode,
+				}, nil
+			}
+		}
+	}
+
+	// Fallback if no tags found
 	return &ServerInfo{
-		Name:       server.Name,
-		Map:        server.Map,
-		Players:    server.Players,
-		MaxPlayers: server.MaxPlayers,
-		GameDir:    server.GameDir,
-		Mode:       mode,
+		Name:       name,
+		Map:        mapName,
+		Players:    int(players),
+		MaxPlayers: int(maxPlayers),
+		GameDir:    folder,
+		Mode:       "未知模式",
 	}, nil
+}
+
+// FetchServerInfo 获取服务器详细信息
+func (a *App) FetchServerInfo(address string) (*ServerInfo, error) {
+	// 使用 UDP 直连查询 (A2S_INFO)
+	info, err := queryA2S(address)
+	if err != nil {
+		return nil, fmt.Errorf("查询服务器失败: %v", err)
+	}
+	return info, nil
 }
 
 func parseGameMode(gametypeStr string) string {

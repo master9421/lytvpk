@@ -337,7 +337,7 @@
               <button id="open-add-server-modal-btn" class="btn btn-success">
                 <span class="icon">➕</span> 添加服务器
               </button>
-              <button id="refresh-all-servers-btn" class="btn btn-outline hidden" title="刷新所有服务器">
+              <button id="refresh-all-servers-btn" class="btn btn-outline" title="刷新所有服务器">
                   <span class="icon">↻</span> 刷新
               </button>
             </div>
@@ -347,22 +347,6 @@
               </ul>
             </div>
             
-            <div class="api-key-section">
-              <div class="api-key-header" id="toggle-api-key-btn">
-                <h3>Steam API 设置 (可选)</h3>
-                <span class="icon">▼</span>
-              </div>
-              <div id="api-key-container" class="api-key-content hidden">
-                <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
-                    <input type="password" id="steam-api-key-input" placeholder="输入 Steam Web API Key (留空可清除)" class="form-input" style="flex: 1;">
-                    <button id="save-api-key-btn" class="btn btn-primary">保存</button>
-                    <button id="get-api-key-btn" class="btn btn-outline" title="获取 API Key">
-                        <span class="icon">🔑</span> 获取
-                    </button>
-                </div>
-              </div>
-            </div>
-
             <div class="server-data-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-light);">
               <div class="server-data-header" id="toggle-data-mgmt-btn" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
                 <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">数据管理</h3>

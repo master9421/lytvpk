@@ -23,7 +23,7 @@ export function ExtractVPKFromRar(arg1:string,arg2:string):Promise<void>;
 
 export function ExtractVPKFromZip(arg1:string,arg2:string):Promise<void>;
 
-export function FetchServerInfo(arg1:string,arg2:string):Promise<main.ServerInfo>;
+export function FetchServerInfo(arg1:string):Promise<main.ServerInfo>;
 
 export function ForceExit():Promise<void>;
 
