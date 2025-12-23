@@ -133,8 +133,7 @@ export namespace parser {
 	    chapters: Record<string, ChapterInfo>;
 	    mode: string;
 	    previewImage: string;
-	    // Go type: time
-	    lastModified: any;
+	    lastModified: string;
 	    title: string;
 	    author: string;
 	    version: string;
@@ -157,7 +156,7 @@ export namespace parser {
 	        this.chapters = this.convertValues(source["chapters"], ChapterInfo, true);
 	        this.mode = source["mode"];
 	        this.previewImage = source["previewImage"];
-	        this.lastModified = this.convertValues(source["lastModified"], null);
+	        this.lastModified = source["lastModified"];
 	        this.title = source["title"];
 	        this.author = source["author"];
 	        this.version = source["version"];

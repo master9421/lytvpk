@@ -1,7 +1,5 @@
 package parser
 
-import "time"
-
 // ChapterInfo 章节信息用于前端显示
 type ChapterInfo struct {
 	Title string   `json:"title"` // 章节标题
@@ -21,7 +19,7 @@ type VPKFile struct {
 	Chapters      map[string]ChapterInfo `json:"chapters"` // key: 章节代码, value: 章节信息
 	Mode          string                 `json:"mode"`
 	PreviewImage  string                 `json:"previewImage"` // Base64编码的预览图
-	LastModified  time.Time              `json:"lastModified"`
+	LastModified  string                 `json:"lastModified"`
 	// addoninfo.txt 相关信息
 	Title   string `json:"title"`   // addontitle (必有)
 	Author  string `json:"author"`  // addonauthor (若有)

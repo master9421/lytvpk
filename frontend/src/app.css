@@ -2157,7 +2157,7 @@ body {
 
 /* Server Modal Styles */
 .server-modal-content {
-  width: 600px;
+  width: 800px;
   max-width: 90%;
 }
 
@@ -2433,10 +2433,6 @@ body {
   background: rgba(107, 114, 128, 0.1);
   color: var(--text-secondary);
   border-color: rgba(107, 114, 128, 0.2);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .error-text {

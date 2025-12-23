@@ -304,7 +304,7 @@ func (a *App) processVPKFileWithCache(filePath string) {
 	vpkFile.Size = size
 	vpkFile.Location = location
 	vpkFile.Enabled = location != "disabled"
-	vpkFile.LastModified = modTime
+	vpkFile.LastModified = modTime.Format(time.RFC3339)
 	vpkFile.Path = filePath
 
 	// 存入缓存
