@@ -24,16 +24,23 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-type WorkshopFileDetails struct {
-	Result          int    `json:"result"`
+type WorkshopChild struct {
 	PublishedFileId string `json:"publishedfileid"`
-	Creator         string `json:"creator"`
-	Filename        string `json:"filename"`
-	FileSize        string `json:"file_size"`
-	FileUrl         string `json:"file_url"`
-	PreviewUrl      string `json:"preview_url"`
-	Title           string `json:"title"`
-	Description     string `json:"file_description"`
+	SortOrder       int    `json:"sortorder"`
+	FileType        int    `json:"file_type"`
+}
+
+type WorkshopFileDetails struct {
+	Result          int             `json:"result"`
+	PublishedFileId string          `json:"publishedfileid"`
+	Creator         string          `json:"creator"`
+	Filename        string          `json:"filename"`
+	FileSize        string          `json:"file_size"`
+	FileUrl         string          `json:"file_url"`
+	PreviewUrl      string          `json:"preview_url"`
+	Title           string          `json:"title"`
+	Description     string          `json:"file_description"`
+	Children        []WorkshopChild `json:"children"`
 }
 
 type DownloadTask struct {
@@ -160,14 +167,44 @@ func (a *App) ParseWorkshopID(workshopUrl string) (string, error) {
 }
 
 // GetWorkshopDetails fetches details from steamworkshopdownloader.io
-func (a *App) GetWorkshopDetails(workshopUrl string) (*WorkshopFileDetails, error) {
+func (a *App) GetWorkshopDetails(workshopUrl string) ([]WorkshopFileDetails, error) {
 	id, err := a.ParseWorkshopID(workshopUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	apiUrl := "https://steamworkshopdownloader.io/api/details/file"
 	payload := fmt.Sprintf(`[%s]`, id)
+	details, err := a.fetchWorkshopDetails(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(details) == 0 {
+		return nil, fmt.Errorf("no details found")
+	}
+
+	// Check if it's a collection (has children)
+	if len(details[0].Children) > 0 {
+		var childIDs []string
+		for _, child := range details[0].Children {
+			childIDs = append(childIDs, child.PublishedFileId)
+		}
+
+		// Fetch details for all children
+		childPayload := "[" + strings.Join(childIDs, ",") + "]"
+		childrenDetails, err := a.fetchWorkshopDetails(childPayload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch children details: %v", err)
+		}
+
+		return a.processDetails(childrenDetails)
+	}
+
+	return a.processDetails(details)
+}
+
+func (a *App) fetchWorkshopDetails(payload string) ([]WorkshopFileDetails, error) {
+	apiUrl := "https://steamworkshopdownloader.io/api/details/file"
 
 	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer([]byte(payload)))
 	if err != nil {
@@ -194,21 +231,26 @@ func (a *App) GetWorkshopDetails(workshopUrl string) (*WorkshopFileDetails, erro
 		return nil, err
 	}
 
-	if len(details) == 0 {
-		return nil, fmt.Errorf("no details found")
+	return details, nil
+}
+
+func (a *App) processDetails(details []WorkshopFileDetails) ([]WorkshopFileDetails, error) {
+	var validDetails []WorkshopFileDetails
+	for i := range details {
+		if details[i].Result == 1 {
+			// Remove Creator info as requested
+			details[i].Creator = ""
+			// Clean filename
+			details[i].Filename = cleanFilename(details[i].Filename)
+			validDetails = append(validDetails, details[i])
+		}
 	}
 
-	if details[0].Result != 1 {
-		return nil, fmt.Errorf("API returned error result")
+	if len(validDetails) == 0 {
+		return nil, fmt.Errorf("no valid details found")
 	}
 
-	// Remove Creator info as requested
-	details[0].Creator = ""
-
-	// Clean filename
-	details[0].Filename = cleanFilename(details[0].Filename)
-
-	return &details[0], nil
+	return validDetails, nil
 }
 
 func cleanFilename(filename string) string {

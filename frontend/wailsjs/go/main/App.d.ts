@@ -39,7 +39,7 @@ export function GetSecondaryTags(arg1:string):Promise<Array<string>>;
 
 export function GetVPKFiles():Promise<Array<parser.VPKFile>>;
 
-export function GetWorkshopDetails(arg1:string):Promise<main.WorkshopFileDetails>;
+export function GetWorkshopDetails(arg1:string):Promise<Array<main.WorkshopFileDetails>>;
 
 export function HandleFileDrop(arg1:Array<string>):Promise<void>;
 

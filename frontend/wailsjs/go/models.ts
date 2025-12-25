@@ -74,6 +74,22 @@ export namespace main {
 	        this.mode = source["mode"];
 	    }
 	}
+	export class WorkshopChild {
+	    publishedfileid: string;
+	    sortorder: number;
+	    file_type: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new WorkshopChild(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.publishedfileid = source["publishedfileid"];
+	        this.sortorder = source["sortorder"];
+	        this.file_type = source["file_type"];
+	    }
+	}
 	export class WorkshopFileDetails {
 	    result: number;
 	    publishedfileid: string;
@@ -84,6 +100,7 @@ export namespace main {
 	    preview_url: string;
 	    title: string;
 	    file_description: string;
+	    children: WorkshopChild[];
 	
 	    static createFrom(source: any = {}) {
 	        return new WorkshopFileDetails(source);
@@ -100,7 +117,26 @@ export namespace main {
 	        this.preview_url = source["preview_url"];
 	        this.title = source["title"];
 	        this.file_description = source["file_description"];
+	        this.children = this.convertValues(source["children"], WorkshopChild);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

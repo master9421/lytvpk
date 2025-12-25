@@ -1949,25 +1949,81 @@ async function checkWorkshopUrl() {
   downloadUrlInput.value = '';
 
   try {
-    const details = await GetWorkshopDetails(url);
-    currentWorkshopDetails = details;
+    const detailsList = await GetWorkshopDetails(url);
+    currentWorkshopDetails = detailsList;
     
-    document.getElementById('workshop-title').textContent = details.title;
-    document.getElementById('workshop-filename').textContent = details.filename;
-    document.getElementById('workshop-filesize').textContent = formatBytes(parseInt(details.file_size));
-    
-    const creatorContainer = document.getElementById('workshop-creator-container');
-    if (details.creator && details.creator.trim() !== '') {
-      creatorContainer.style.display = 'block';
-      document.getElementById('workshop-creator').textContent = details.creator;
-    } else {
-      creatorContainer.style.display = 'none';
+    result.innerHTML = ''; // Clear previous content
+
+    if (!detailsList || detailsList.length === 0) {
+        showError('未找到相关文件');
+        return;
     }
 
-    document.getElementById('workshop-preview').src = details.preview_url;
-    
-    // Fill download URL
-    downloadUrlInput.value = details.file_url;
+    // If only one result, fill the input for backward compatibility
+    const downloadBtn = document.getElementById('download-workshop-btn');
+    if (detailsList.length === 1) {
+         downloadUrlInput.value = detailsList[0].file_url;
+         downloadBtn.textContent = '下载';
+    } else {
+         downloadUrlInput.value = ''; 
+         downloadUrlInput.placeholder = `解析出 ${detailsList.length} 个文件，请在下方选择下载`;
+         downloadBtn.textContent = '全部下载';
+    }
+
+    detailsList.forEach((details, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'workshop-info';
+        itemDiv.style.cssText = 'display: flex; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px;';
+        
+        const creatorHtml = (details.creator && details.creator.trim() !== '') 
+            ? `<p><strong>作者:</strong> <span>${details.creator}</span></p>` 
+            : '';
+
+        itemDiv.innerHTML = `
+            <img src="${details.preview_url}" alt="Preview" class="workshop-preview" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 4px;" />
+            <div class="workshop-details" style="flex: 1;">
+              <h3 style="margin-top: 0;">${details.title}</h3>
+              <p><strong>文件名:</strong> <span>${details.filename}</span></p>
+              <p><strong>大小:</strong> <span>${formatBytes(parseInt(details.file_size))}</span></p>
+              ${creatorHtml}
+              <div style="margin-top: 10px;">
+                  <button class="btn btn-success download-item-btn" data-index="${index}">下载此文件</button>
+                  <button class="btn btn-secondary copy-url-item-btn" data-url="${details.file_url}">复制链接</button>
+              </div>
+            </div>
+        `;
+        result.appendChild(itemDiv);
+    });
+
+    // Bind events
+    result.querySelectorAll('.download-item-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const index = parseInt(btn.dataset.index);
+            try {
+                await StartDownloadTask(currentWorkshopDetails[index]);
+                showInfo('已添加到下载队列');
+                refreshTaskList();
+            } catch (err) {
+                showError('下载失败: ' + err);
+            }
+        });
+    });
+
+    result.querySelectorAll('.copy-url-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(btn.dataset.url).then(() => showInfo('链接已复制'));
+            } else {
+                const el = document.createElement('textarea');
+                el.value = btn.dataset.url;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showInfo('链接已复制');
+            }
+        });
+    });
     
     result.classList.remove('hidden');
   } catch (err) {
@@ -1982,14 +2038,45 @@ async function checkWorkshopUrl() {
 async function downloadWorkshopFile() {
   const downloadUrl = document.getElementById('download-url').value.trim();
   
+  // Handle multiple files download (Download All)
+  if (Array.isArray(currentWorkshopDetails) && currentWorkshopDetails.length > 1) {
+      let successCount = 0;
+      for (const details of currentWorkshopDetails) {
+          try {
+              await StartDownloadTask(details);
+              successCount++;
+          } catch (err) {
+              console.error("Failed to start task for", details.title, err);
+          }
+      }
+      
+      if (successCount > 0) {
+          showInfo(`已添加 ${successCount} 个任务到下载队列`);
+          // Reset UI
+          document.getElementById('workshop-url').value = '';
+          document.getElementById('download-url').value = '';
+          document.getElementById('download-url').placeholder = '解析后自动填充，或手动输入直链...';
+          document.getElementById('workshop-result').classList.add('hidden');
+          document.getElementById('download-workshop-btn').textContent = '下载';
+          currentWorkshopDetails = [];
+          refreshTaskList();
+      } else {
+          showError('添加任务失败');
+      }
+      return;
+  }
+
   if (!downloadUrl) {
     showError('请输入或解析下载链接');
     return;
   }
 
-  // If we have details, update the URL from input (in case user edited it)
-  if (currentWorkshopDetails) {
-    currentWorkshopDetails.file_url = downloadUrl;
+  let taskDetails = null;
+
+  // If we have a single detail, use it as base
+  if (Array.isArray(currentWorkshopDetails) && currentWorkshopDetails.length === 1) {
+    taskDetails = {...currentWorkshopDetails[0]};
+    taskDetails.file_url = downloadUrl;
   } else {
     // Create dummy details for direct download
     // Try to extract filename from URL
@@ -2007,7 +2094,7 @@ async function downloadWorkshopFile() {
       console.warn('Failed to parse URL for filename:', e);
     }
 
-    currentWorkshopDetails = {
+    taskDetails = {
       title: 'Direct Download',
       filename: filename,
       file_url: downloadUrl,
@@ -2019,18 +2106,21 @@ async function downloadWorkshopFile() {
   }
   
   try {
-    await StartDownloadTask(currentWorkshopDetails);
+    await StartDownloadTask(taskDetails);
     showInfo('已添加到后台下载队列');
     
     // Reset UI for next input
     document.getElementById('workshop-url').value = '';
     document.getElementById('download-url').value = '';
+    document.getElementById('download-url').placeholder = '解析后自动填充，或手动输入直链...';
     document.getElementById('workshop-result').classList.add('hidden');
-    currentWorkshopDetails = null;
+    document.getElementById('download-workshop-btn').textContent = '下载';
+    currentWorkshopDetails = [];
     
+    // Refresh tasks list
     refreshTaskList();
   } catch (err) {
-    showError('启动下载失败: ' + err);
+    showError('添加任务失败: ' + err);
   }
 }
 
