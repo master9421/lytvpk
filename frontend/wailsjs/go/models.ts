@@ -7,6 +7,7 @@ export namespace main {
 	    filename: string;
 	    preview_url: string;
 	    file_url: string;
+	    use_optimized_ip: boolean;
 	    status: string;
 	    progress: number;
 	    total_size: number;
@@ -27,6 +28,7 @@ export namespace main {
 	        this.filename = source["filename"];
 	        this.preview_url = source["preview_url"];
 	        this.file_url = source["file_url"];
+	        this.use_optimized_ip = source["use_optimized_ip"];
 	        this.status = source["status"];
 	        this.progress = source["progress"];
 	        this.total_size = source["total_size"];

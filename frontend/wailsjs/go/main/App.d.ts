@@ -65,7 +65,7 @@ export function SelectDirectory():Promise<string>;
 
 export function SetRootDirectory(arg1:string):Promise<void>;
 
-export function StartDownloadTask(arg1:main.WorkshopFileDetails):Promise<string>;
+export function StartDownloadTask(arg1:main.WorkshopFileDetails,arg2:boolean):Promise<string>;
 
 export function ToggleVPKFile(arg1:string):Promise<void>;
 

@@ -50,7 +50,8 @@ type DownloadTask struct {
 	Filename       string             `json:"filename"`
 	PreviewUrl     string             `json:"preview_url"`
 	FileUrl        string             `json:"file_url"` // Added for retry
-	Status         string             `json:"status"`   // "pending", "downloading", "completed", "failed", "cancelled"
+	UseOptimizedIP bool               `json:"use_optimized_ip"`
+	Status         string             `json:"status"` // "pending", "downloading", "completed", "failed", "cancelled"
 	Progress       int                `json:"progress"`
 	TotalSize      int64              `json:"total_size"`
 	DownloadedSize int64              `json:"downloaded_size"`
@@ -274,7 +275,7 @@ func cleanFilename(filename string) string {
 }
 
 // StartDownloadTask starts a background download task
-func (a *App) StartDownloadTask(details WorkshopFileDetails) string {
+func (a *App) StartDownloadTask(details WorkshopFileDetails, useOptimizedIP bool) string {
 	taskID := fmt.Sprintf("%d", time.Now().UnixNano())
 
 	totalSize := parseFileSize(details.FileSize)
@@ -292,17 +293,18 @@ func (a *App) StartDownloadTask(details WorkshopFileDetails) string {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	task := &DownloadTask{
-		ID:         taskID,
-		WorkshopID: details.PublishedFileId,
-		Title:      title,
-		Filename:   filename,
-		PreviewUrl: details.PreviewUrl,
-		FileUrl:    details.FileUrl,
-		Status:     "pending",
-		Progress:   0,
-		TotalSize:  totalSize,
-		CreatedAt:  time.Now().Format("2006-01-02 15:04:05"),
-		cancelFunc: cancel,
+		ID:             taskID,
+		WorkshopID:     details.PublishedFileId,
+		Title:          title,
+		Filename:       filename,
+		PreviewUrl:     details.PreviewUrl,
+		FileUrl:        details.FileUrl,
+		UseOptimizedIP: useOptimizedIP,
+		Status:         "pending",
+		Progress:       0,
+		TotalSize:      totalSize,
+		CreatedAt:      time.Now().Format("2006-01-02 15:04:05"),
+		cancelFunc:     cancel,
 	}
 
 	taskManager.mu.Lock()
@@ -314,7 +316,7 @@ func (a *App) StartDownloadTask(details WorkshopFileDetails) string {
 	return taskID
 }
 
-func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url string) {
+func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, downloadUrl string) {
 	updateStatus := func(status string, err string) {
 		taskManager.mu.Lock()
 		task.Status = status
@@ -330,9 +332,17 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url s
 		return
 	}
 
-	if url == "" {
+	if downloadUrl == "" {
 		updateStatus("failed", "Download URL is empty")
 		return
+	}
+
+	// IP Optimization
+	var bestIP string
+	if task.UseOptimizedIP {
+		updateStatus("selecting_ip", "")
+		bestIP = globalIPSelector.GetBestIP(downloadUrl)
+		updateStatus("downloading", "")
 	}
 
 	// Ensure temp directory exists
@@ -382,6 +392,26 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url s
 		ResponseHeaderTimeout: 60 * time.Second, // Increased timeout
 	}
 
+	if task.UseOptimizedIP {
+		if bestIP != "" {
+			dialer := &net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}
+			transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				host, port, _ := net.SplitHostPort(addr)
+
+				// Check if the host matches the download URL's host
+				u, err := url.Parse(downloadUrl)
+				if err == nil && u.Hostname() == host {
+					return dialer.DialContext(ctx, network, net.JoinHostPort(bestIP, port))
+				}
+				return dialer.DialContext(ctx, network, addr)
+			}
+			fmt.Printf("[Download] Using optimized IP: %s for %s\n", bestIP, downloadUrl)
+		}
+	}
+
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   0, // No global timeout for large downloads
@@ -408,7 +438,7 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, url s
 			fmt.Printf("[Download] Retrying task %s (%d/%d)...\n", task.ID, i+1, maxRetries)
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", downloadUrl, nil)
 		if err != nil {
 			updateStatus("failed", err.Error())
 			return

@@ -140,6 +140,17 @@ function setupEventListeners() {
   document.getElementById('workshop-btn').addEventListener('click', openWorkshopModal);
   document.getElementById('close-workshop-modal-btn').addEventListener('click', closeWorkshopModal);
   document.getElementById('check-workshop-btn').addEventListener('click', checkWorkshopUrl);
+  document.getElementById('download-url').addEventListener('input', (e) => {
+      const val = e.target.value;
+      const optimizedIpContainer = document.getElementById('optimized-ip-container');
+      if (val.includes('cdn.steamusercontent.com')) {
+          optimizedIpContainer.classList.remove('hidden');
+      } else {
+          optimizedIpContainer.classList.add('hidden');
+          document.getElementById('use-optimized-ip-global').checked = false;
+      }
+  });
+
   document.getElementById('download-workshop-btn').addEventListener('click', downloadWorkshopFile);
   
   // 复制下载链接按钮
@@ -1961,13 +1972,33 @@ async function checkWorkshopUrl() {
 
     // If only one result, fill the input for backward compatibility
     const downloadBtn = document.getElementById('download-workshop-btn');
+    const optimizedIpContainer = document.getElementById('optimized-ip-container');
+    let hasSteamCDN = false;
+
     if (detailsList.length === 1) {
          downloadUrlInput.value = detailsList[0].file_url;
          downloadBtn.textContent = '下载';
+         if (detailsList[0].file_url.includes('cdn.steamusercontent.com')) {
+             hasSteamCDN = true;
+         }
     } else {
          downloadUrlInput.value = ''; 
          downloadUrlInput.placeholder = `解析出 ${detailsList.length} 个文件，请在下方选择下载`;
          downloadBtn.textContent = '全部下载';
+         // Check if any file is from Steam CDN
+         for (const detail of detailsList) {
+             if (detail.file_url.includes('cdn.steamusercontent.com')) {
+                 hasSteamCDN = true;
+                 break;
+             }
+         }
+    }
+
+    if (hasSteamCDN) {
+        optimizedIpContainer.classList.remove('hidden');
+    } else {
+        optimizedIpContainer.classList.add('hidden');
+        document.getElementById('use-optimized-ip-global').checked = false;
     }
 
     detailsList.forEach((details, index) => {
@@ -1999,8 +2030,9 @@ async function checkWorkshopUrl() {
     result.querySelectorAll('.download-item-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const index = parseInt(btn.dataset.index);
+            const useOptimizedIP = document.getElementById('use-optimized-ip-global').checked;
             try {
-                await StartDownloadTask(currentWorkshopDetails[index]);
+                await StartDownloadTask(currentWorkshopDetails[index], useOptimizedIP);
                 showInfo('已添加到下载队列');
                 refreshTaskList();
             } catch (err) {
@@ -2037,13 +2069,14 @@ async function checkWorkshopUrl() {
 
 async function downloadWorkshopFile() {
   const downloadUrl = document.getElementById('download-url').value.trim();
+  const useOptimizedIP = document.getElementById('use-optimized-ip-global').checked;
   
   // Handle multiple files download (Download All)
   if (Array.isArray(currentWorkshopDetails) && currentWorkshopDetails.length > 1) {
       let successCount = 0;
       for (const details of currentWorkshopDetails) {
           try {
-              await StartDownloadTask(details);
+              await StartDownloadTask(details, useOptimizedIP);
               successCount++;
           } catch (err) {
               console.error("Failed to start task for", details.title, err);
@@ -2106,7 +2139,7 @@ async function downloadWorkshopFile() {
   }
   
   try {
-    await StartDownloadTask(taskDetails);
+    await StartDownloadTask(taskDetails, useOptimizedIP);
     showInfo('已添加到后台下载队列');
     
     // Reset UI for next input
@@ -2136,9 +2169,9 @@ async function refreshTaskList() {
 
     // Sort tasks: pending/downloading first, then by time
     tasks.sort((a, b) => {
-      const statusOrder = { 'downloading': 0, 'pending': 1, 'failed': 2, 'completed': 3 };
+      const statusOrder = { 'selecting_ip': 0, 'downloading': 1, 'pending': 2, 'failed': 3, 'completed': 4 };
       if (statusOrder[a.status] !== statusOrder[b.status]) {
-        return statusOrder[a.status] - statusOrder[b.status];
+        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
       }
       return b.id.localeCompare(a.id);
     });
@@ -2161,6 +2194,7 @@ function createTaskElement(task) {
   
   const statusColors = {
     'pending': '#ff9800',
+    'selecting_ip': '#9c27b0',
     'downloading': '#2196f3',
     'completed': '#4caf50',
     'failed': '#f44336'
@@ -2168,6 +2202,7 @@ function createTaskElement(task) {
 
   const statusText = {
     'pending': '等待中',
+    'selecting_ip': '优选线路中...',
     'downloading': '下载中',
     'completed': '已完成',
     'failed': '失败',
@@ -2175,7 +2210,7 @@ function createTaskElement(task) {
   };
 
   let actionButtons = '';
-  if (task.status === 'downloading' || task.status === 'pending') {
+  if (task.status === 'downloading' || task.status === 'pending' || task.status === 'selecting_ip') {
     actionButtons = `
       <button class="task-action-btn cancel-btn cancel-task-btn" data-id="${task.id}" title="取消下载">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

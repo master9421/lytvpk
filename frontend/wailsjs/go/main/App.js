@@ -126,8 +126,8 @@ export function SetRootDirectory(arg1) {
   return window['go']['main']['App']['SetRootDirectory'](arg1);
 }
 
-export function StartDownloadTask(arg1) {
-  return window['go']['main']['App']['StartDownloadTask'](arg1);
+export function StartDownloadTask(arg1, arg2) {
+  return window['go']['main']['App']['StartDownloadTask'](arg1, arg2);
 }
 
 export function ToggleVPKFile(arg1) {
