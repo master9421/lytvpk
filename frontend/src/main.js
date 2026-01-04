@@ -148,6 +148,15 @@ function setupEventListeners() {
     e.preventDefault();
   });
 
+  // 阻止应用内元素的拖拽（防止误触发文件拖入逻辑）
+  window.addEventListener('dragstart', function(e) {
+    // 允许输入框和文本域的拖拽操作
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    e.preventDefault();
+  });
+
   // 退出确认模态框事件
   document.getElementById('close-exit-modal-btn').addEventListener('click', closeExitModal);
   document.getElementById('exit-cancel-btn').addEventListener('click', closeExitModal);
