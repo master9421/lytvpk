@@ -118,6 +118,10 @@ export function ParseWorkshopID(arg1) {
   return window['go']['main']['App']['ParseWorkshopID'](arg1);
 }
 
+export function RestartApplication() {
+  return window['go']['main']['App']['RestartApplication']();
+}
+
 export function RetryDownloadTask(arg1) {
   return window['go']['main']['App']['RetryDownloadTask'](arg1);
 }

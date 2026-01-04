@@ -1506,3 +1506,24 @@ func (a *App) ExportServersToFile(jsonContent string) (string, error) {
 
 	return selection, os.WriteFile(selection, []byte(jsonContent), 0644)
 }
+
+// RestartApplication 重启应用
+func (a *App) RestartApplication() error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	// 使用 cmd /c start "" "exe_path" 启动新进程
+	// start 命令的第一个参数是窗口标题，留空即可
+	cmd := exec.Command("cmd", "/c", "start", "", self)
+
+	// 启动但不等待
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	// 退出当前应用
+	runtime.Quit(a.ctx)
+	return nil
+}

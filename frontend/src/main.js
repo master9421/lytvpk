@@ -3337,8 +3337,19 @@ async function performUpdate(mirrorUrl) {
         config.ignoredVersion = "";
         saveConfig(config);
 
-        showMessageModal("更新成功", "程序将自动关闭，请手动重启以应用更新。", () => {
-            window.runtime.Quit();
+        showMessageModal("更新成功", "程序将自动重启以应用更新。", async () => {
+            try {
+                // 尝试调用重启方法
+                if (window.go.main.App.RestartApplication) {
+                    await window.go.main.App.RestartApplication();
+                } else {
+                    // 兼容旧版本或未生成绑定的情况
+                    window.runtime.Quit();
+                }
+            } catch (e) {
+                console.error("重启失败:", e);
+                window.runtime.Quit();
+            }
         });
     } else {
         showMessageModal("更新失败", result);

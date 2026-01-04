@@ -61,6 +61,8 @@ export function OpenFileLocation(arg1:string):Promise<void>;
 
 export function ParseWorkshopID(arg1:string):Promise<string>;
 
+export function RestartApplication():Promise<void>;
+
 export function RetryDownloadTask(arg1:string):Promise<void>;
 
 export function ScanVPKFiles():Promise<void>;
