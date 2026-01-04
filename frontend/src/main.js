@@ -3578,24 +3578,6 @@ EventsOn("conflict_check_progress", (progress) => {
     }
 });
 
-// 获取文件冲突类型描述
-function getConflictType(filePath) {
-    const lower = filePath.toLowerCase();
-
-    if (lower.endsWith(".bsp")) return "地图";
-    if (lower.startsWith("scripts/")) return "脚本";
-    if (lower.startsWith("resource/")) return "界面";
-    if (lower.startsWith("missions/")) return "任务";
-    if (lower.startsWith("models/")) return "模型";
-    if (lower.startsWith("materials/")) return "材质";
-    if (lower.startsWith("sound/")) return "音频";
-    if (lower.startsWith("particles/")) return "特效";
-    if (lower.endsWith(".nut") || lower.endsWith(".nuc")) return "脚本";
-    if (lower.endsWith(".cfg")) return "配置";
-    
-    return "其他";
-}
-
 // 获取文件分类和样式
 function getFileCategory(filePath) {
     const lower = filePath.toLowerCase().replace(/\\/g, '/');

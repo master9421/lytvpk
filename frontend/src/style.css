@@ -300,61 +300,7 @@
     background-color: var(--text-secondary);
 }
 
-/* 冲突文件列表小圆点样式 */
-.file-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
-    flex-shrink: 0;
-}
 
-.file-dot.critical {
-    background-color: #e74c3c;
-    box-shadow: 0 0 4px rgba(231, 76, 60, 0.5);
-}
-
-.file-dot.warning {
-    background-color: #f39c12;
-    box-shadow: 0 0 4px rgba(243, 156, 18, 0.5);
-}
-
-.file-dot.info {
-    background-color: #3498db;
-    box-shadow: 0 0 4px rgba(52, 152, 219, 0.5);
-}
-
-.conflict-file-item {
-    display: flex;
-    align-items: center;
-}
-
-/* 冲突文件列表标签样式 */
-.file-tag {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-right: 10px;
-    font-size: 0.75em;
-    font-weight: bold;
-    color: white;
-    min-width: 40px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.file-tag.critical {
-    background-color: #e74c3c;
-}
-
-.file-tag.warning {
-    background-color: #f39c12;
-}
-
-.file-tag.info {
-    background-color: #3498db;
-}
 
 /* 冲突分类样式 */
 .conflict-category {
