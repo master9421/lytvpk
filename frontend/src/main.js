@@ -32,6 +32,7 @@ import {
   CheckUpdate,
   DoUpdate,
   GetMirrors,
+  AutoDiscoverAddons,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn, OnFileDrop, BrowserOpenURL } from '../wailsjs/runtime/runtime';
@@ -654,6 +655,34 @@ async function checkInitialDirectory() {
       }
     }
 
+    // 如果还是没有目录，尝试自动搜索
+    if (!dir) {
+      try {
+        // 显示加载状态，避免用户以为卡死
+        updateLoadingMessage('正在自动搜索 L4D2 安装目录...');
+        showLoadingScreen();
+        
+        // 强制等待至少 1.5 秒，确保用户能看到提示
+        const [autoDir] = await Promise.all([
+            AutoDiscoverAddons(),
+            new Promise(resolve => setTimeout(resolve, 1500))
+        ]);
+
+        if (autoDir) {
+          console.log('自动发现目录:', autoDir);
+          await SetRootDirectory(autoDir);
+          setDefaultDirectory(autoDir);
+          dir = autoDir;
+        } else {
+            // 搜索失败提示
+            showError("未自动找到 L4D2 目录，请手动选择", 4000);
+        }
+      } catch (err) {
+        console.warn('自动搜索失败:', err);
+        showError("自动搜索出错: " + err, 4000);
+      }
+    }
+
     if (dir) {
       appState.currentDirectory = dir;
       updateDirectoryDisplay();
@@ -661,10 +690,13 @@ async function checkInitialDirectory() {
       // 自动扫描
       await loadFiles();
     } else {
+      // 确保关闭加载屏幕，显示选择界面
+      document.getElementById('loading-screen').classList.add('hidden');
       showDirectorySelection();
     }
   } catch (error) {
     console.error('初始化失败:', error);
+    document.getElementById('loading-screen').classList.add('hidden');
     showDirectorySelection();
   }
 }
@@ -674,6 +706,7 @@ function showDirectorySelection() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('main-screen').classList.remove('hidden');
   updateLoadingMessage('请选择L4D2的addons目录');
+  enableActionButtons();
 }
 
 // 选择目录

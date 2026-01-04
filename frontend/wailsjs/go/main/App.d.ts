@@ -3,6 +3,8 @@
 import {main} from '../models';
 import {parser} from '../models';
 
+export function AutoDiscoverAddons():Promise<string>;
+
 export function CancelDownloadTask(arg1:string):Promise<void>;
 
 export function CheckConflicts():Promise<main.ConflictResult>;

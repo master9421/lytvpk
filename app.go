@@ -560,6 +560,42 @@ func (a *App) SelectDirectory() (string, error) {
 	return directory, nil
 }
 
+// AutoDiscoverAddons 自动搜索addons目录
+func (a *App) AutoDiscoverAddons() (string, error) {
+	// 常见的相对路径
+	commonPaths := []string{
+		"Steam/steamapps/common/Left 4 Dead 2/left4dead2/addons",
+		"SteamLibrary/steamapps/common/Left 4 Dead 2/left4dead2/addons",
+		"Program Files (x86)/Steam/steamapps/common/Left 4 Dead 2/left4dead2/addons",
+		"Program Files/Steam/steamapps/common/Left 4 Dead 2/left4dead2/addons",
+		"Games/Steam/steamapps/common/Left 4 Dead 2/left4dead2/addons",
+	}
+
+	// 获取所有盘符
+	drives := []string{}
+	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+		drivePath := string(drive) + ":\\"
+		_, err := os.Stat(drivePath)
+		if err == nil {
+			drives = append(drives, drivePath)
+		}
+	}
+
+	// 遍历搜索
+	for _, drive := range drives {
+		for _, path := range commonPaths {
+			fullPath := filepath.Join(drive, path)
+			// 检查目录是否存在
+			info, err := os.Stat(fullPath)
+			if err == nil && info.IsDir() {
+				return fullPath, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
 // SelectFiles 选择文件对话框 (支持多选)
 func (a *App) SelectFiles() ([]string, error) {
 	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
