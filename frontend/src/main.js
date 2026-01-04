@@ -3046,11 +3046,7 @@ async function checkAndInstallUpdate() {
         }
 
         if (info.has_update) {
-            const msg = `发现新版本 v${info.latest_ver}！\n\n当前版本: v${info.current_ver}\n\n更新内容:\n${info.release_note}\n\n是否立即更新并重启？`;
-            
-            if (confirm(msg)) {
-                await performUpdate();
-            }
+            showUpdateModal(info);
         } else {
             console.log("当前已是最新版本");
         }
@@ -3088,9 +3084,7 @@ async function manualCheckUpdate() {
             msgDiv.classList.add('success');
             msgDiv.classList.remove('hidden');
             
-            if (confirm(`发现新版本 v${info.latest_ver}！\n是否立即更新？`)) {
-                await performUpdate();
-            }
+            showUpdateModal(info);
         } else {
             msgDiv.textContent = `当前已是最新版本 (v${info.latest_ver})`;
             msgDiv.classList.add('success');
@@ -3106,8 +3100,122 @@ async function manualCheckUpdate() {
     }
 }
 
+// 显示更新弹窗
+function showUpdateModal(info) {
+    const modal = document.getElementById('update-modal');
+    const newVer = document.getElementById('new-version-number');
+    const curVer = document.getElementById('current-version-number');
+    const notes = document.getElementById('release-notes-content');
+    const mirrorSelect = document.getElementById('mirror-select');
+    const customInput = document.getElementById('custom-mirror-input');
+    const confirmBtn = document.getElementById('confirm-update-btn');
+    const cancelBtn = document.getElementById('cancel-update-btn');
+    const closeBtn = document.getElementById('close-update-modal-btn');
+    const progressContainer = document.getElementById('update-progress-container');
+    const progressFill = document.getElementById('update-progress-fill');
+    const progressText = document.getElementById('update-progress-text');
+    const modalFooter = document.getElementById('update-modal-footer');
+
+    newVer.textContent = info.latest_ver;
+    curVer.textContent = info.current_ver;
+    notes.textContent = info.release_note || '暂无更新日志';
+    
+    // 重置状态
+    mirrorSelect.value = "";
+    customInput.classList.add('hidden');
+    customInput.value = "";
+    progressContainer.classList.add('hidden');
+    modalFooter.classList.remove('hidden');
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '立即更新';
+
+    // 镜像选择事件
+    mirrorSelect.onchange = () => {
+        if (mirrorSelect.value === 'custom') {
+            customInput.classList.remove('hidden');
+        } else {
+            customInput.classList.add('hidden');
+        }
+    };
+
+    let cancelProgress = null;
+
+    // 清理函数
+    const cleanup = () => {
+        if (cancelProgress) {
+            cancelProgress();
+            cancelProgress = null;
+        }
+        modal.classList.add('hidden');
+    };
+
+    // 确认更新
+    confirmBtn.onclick = async () => {
+        let mirror = mirrorSelect.value;
+        if (mirror === 'custom') {
+            mirror = customInput.value.trim();
+            if (!mirror) {
+                showMessageModal("提示", "请输入自定义镜像地址");
+                return;
+            }
+        }
+
+        // 切换到进度条模式
+        modalFooter.classList.add('hidden');
+        progressContainer.classList.remove('hidden');
+        progressFill.style.width = '0%';
+        progressText.textContent = '0%';
+        
+        // 监听进度
+        if (cancelProgress) cancelProgress();
+        cancelProgress = EventsOn("update_progress", (percent) => {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+        });
+
+        await performUpdate(mirror);
+        
+        // 恢复状态 (如果失败)
+        modalFooter.classList.remove('hidden');
+        progressContainer.classList.add('hidden');
+        
+        if (cancelProgress) {
+            cancelProgress();
+            cancelProgress = null;
+        }
+    };
+
+    // 关闭弹窗
+    cancelBtn.onclick = cleanup;
+    closeBtn.onclick = cleanup;
+
+    modal.classList.remove('hidden');
+}
+
+// 显示通用消息弹窗
+function showMessageModal(title, message, onConfirm) {
+    const modal = document.getElementById('message-modal');
+    const titleEl = document.getElementById('message-modal-title');
+    const contentEl = document.getElementById('message-modal-content');
+    const confirmBtn = document.getElementById('message-modal-confirm-btn');
+    const closeBtn = document.getElementById('close-message-modal-btn');
+
+    titleEl.textContent = title;
+    contentEl.textContent = message;
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        if (onConfirm) onConfirm();
+    };
+
+    confirmBtn.onclick = closeModal;
+    closeBtn.onclick = () => modal.classList.add('hidden'); // 关闭按钮不触发回调
+
+    modal.classList.remove('hidden');
+}
+
 // 执行更新逻辑
-async function performUpdate() {
+async function performUpdate(mirrorUrl) {
     // 显示全局加载提示
     const btn = document.getElementById('refresh-btn');
     if(btn) btn.textContent = '正在更新...';
@@ -3119,13 +3227,15 @@ async function performUpdate() {
         updateBtn.textContent = '正在下载...';
     }
 
-    const result = await DoUpdate();
+    // 调用后端 DoUpdate，传入镜像地址
+    const result = await window.go.main.App.DoUpdate(mirrorUrl || "");
     
     if (result === "success") {
-        alert("更新成功！程序将自动关闭，请手动重启。");
-        window.runtime.Quit();
+        showMessageModal("更新成功", "程序将自动关闭，请手动重启以应用更新。", () => {
+            window.runtime.Quit();
+        });
     } else {
-        alert("更新失败: " + result);
+        showMessageModal("更新失败", result);
         if(btn) btn.textContent = '刷新';
         if(updateBtn) {
             updateBtn.disabled = false;

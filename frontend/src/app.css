@@ -2614,3 +2614,182 @@ body {
   color: var(--text-tertiary);
   font-style: italic;
 }
+
+/* 更新弹窗样式 */
+.update-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.update-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.version-tag {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.version-tag.new {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.version-tag.current {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--gray-600);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.version-arrow {
+  color: var(--text-tertiary);
+}
+
+.update-notes h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.95em;
+  color: var(--text-primary);
+}
+
+.notes-content {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.update-options {
+  margin-top: 8px;
+}
+
+.update-options label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.form-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.form-input.hidden {
+  display: none;
+}
+
+/* 美化下拉框 */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  padding-right: 30px; /* 为箭头留出空间 */
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9em;
+  appearance: none; /* 移除原生样式 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.form-select:hover {
+  border-color: var(--border-strong);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-10);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.7em;
+  color: var(--text-tertiary);
+}
+
+/* 自定义输入框美化 */
+#custom-mirror-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+#custom-mirror-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-10);
+}
+
+/* 消息弹窗内容样式 */
+.message-content {
+  padding: 20px 0;
+  text-align: center;
+  font-size: 1.1em;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* 进度条样式 */
+.update-progress {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}

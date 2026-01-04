@@ -26,8 +26,8 @@ export function DeleteVPKFiles(arg1) {
   return window['go']['main']['App']['DeleteVPKFiles'](arg1);
 }
 
-export function DoUpdate() {
-  return window['go']['main']['App']['DoUpdate']();
+export function DoUpdate(arg1) {
+  return window['go']['main']['App']['DoUpdate'](arg1);
 }
 
 export function ExportServersToFile(arg1) {

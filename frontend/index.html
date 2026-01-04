@@ -186,6 +186,77 @@
         </div>
       </div>
 
+      <!-- 更新确认弹窗 -->
+      <div id="update-modal" class="modal hidden">
+        <div class="modal-content modal-small">
+          <div class="modal-header">
+            <h3>发现新版本</h3>
+            <button id="close-update-modal-btn" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="update-info-container">
+              <div class="update-header">
+                <span class="version-tag current">当前: v<span id="current-version-number"></span></span>
+                <span class="version-arrow">→</span>
+                <span class="version-tag new">v<span id="new-version-number"></span></span>
+              </div>
+              
+              <div class="update-notes">
+                <h4>更新内容:</h4>
+                <div id="release-notes-content" class="notes-content"></div>
+              </div>
+
+              <div class="update-options">
+                <label>下载源选择:</label>
+                <div class="select-wrapper">
+                  <select id="mirror-select" class="form-select">
+                    <option value="">GitHub 直连</option>
+                    <option value="https://edgeone.gh-proxy.com/">https://edgeone.gh-proxy.com/</option>
+                    <option value="https://hk.gh-proxy.com/">https://hk.gh-proxy.com/</option>
+                    <option value="https://gh-proxy.com/">https://gh-proxy.com/</option>
+                    <option value="https://gh.llkk.cc/">https://gh.llkk.cc/</option>
+                    <option value="custom">自定义镜像源...</option>
+                  </select>
+                  <div class="select-arrow">▼</div>
+                </div>
+                <input type="text" id="custom-mirror-input" class="form-input hidden" placeholder="输入镜像地址 (例如 https://mirror.example.com/)" style="margin-top: 8px;">
+              </div>
+
+              <!-- 进度条区域 -->
+              <div id="update-progress-container" class="update-progress hidden">
+                <div class="progress-info">
+                  <span>正在下载更新...</span>
+                  <span id="update-progress-text">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div id="update-progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" id="update-modal-footer">
+            <button id="cancel-update-btn" class="btn btn-secondary">稍后提醒</button>
+            <button id="confirm-update-btn" class="btn btn-primary">立即更新</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通用消息弹窗 -->
+      <div id="message-modal" class="modal hidden">
+        <div class="modal-content modal-small">
+          <div class="modal-header">
+            <h3 id="message-modal-title">提示</h3>
+            <button id="close-message-modal-btn" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="message-modal-content" class="message-content"></div>
+          </div>
+          <div class="modal-footer">
+            <button id="message-modal-confirm-btn" class="btn btn-primary">确定</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 文件详情弹窗 -->
       <div id="file-detail-modal" class="modal hidden">
         <div class="modal-content">

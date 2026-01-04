@@ -15,7 +15,7 @@ export function DeleteVPKFile(arg1:string):Promise<void>;
 
 export function DeleteVPKFiles(arg1:Array<string>):Promise<void>;
 
-export function DoUpdate():Promise<string>;
+export function DoUpdate(arg1:string):Promise<string>;
 
 export function ExportServersToFile(arg1:string):Promise<string>;
 

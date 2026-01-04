@@ -10,7 +10,6 @@ require (
 	github.com/hymkor/trash-go v0.3.0
 	github.com/nwaples/rardecode v1.1.3
 	github.com/panjf2000/ants/v2 v2.11.3
-	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/wailsapp/wails/v2 v2.10.2
 	golang.org/x/text v0.32.0
 )
@@ -22,13 +21,9 @@ require (
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/go-github/v30 v30.1.0 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/labstack/echo/v4 v4.13.4 // indirect
@@ -46,7 +41,6 @@ require (
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
-	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -56,11 +50,8 @@ require (
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.6.0 => C:\Users\PC\go\pkg\mod
