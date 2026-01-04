@@ -76,6 +76,28 @@ export namespace main {
 	        this.mode = source["mode"];
 	    }
 	}
+	export class UpdateInfo {
+	    has_update: boolean;
+	    latest_ver: string;
+	    current_ver: string;
+	    release_note: string;
+	    download_url: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.has_update = source["has_update"];
+	        this.latest_ver = source["latest_ver"];
+	        this.current_ver = source["current_ver"];
+	        this.release_note = source["release_note"];
+	        this.download_url = source["download_url"];
+	        this.error = source["error"];
+	    }
+	}
 	export class WorkshopChild {
 	    publishedfileid: string;
 	    sortorder: number;

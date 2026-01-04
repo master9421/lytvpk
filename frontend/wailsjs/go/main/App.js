@@ -6,6 +6,10 @@ export function CancelDownloadTask(arg1) {
   return window['go']['main']['App']['CancelDownloadTask'](arg1);
 }
 
+export function CheckUpdate() {
+  return window['go']['main']['App']['CheckUpdate']();
+}
+
 export function ClearCompletedTasks() {
   return window['go']['main']['App']['ClearCompletedTasks']();
 }
@@ -20,6 +24,10 @@ export function DeleteVPKFile(arg1) {
 
 export function DeleteVPKFiles(arg1) {
   return window['go']['main']['App']['DeleteVPKFiles'](arg1);
+}
+
+export function DoUpdate() {
+  return window['go']['main']['App']['DoUpdate']();
 }
 
 export function ExportServersToFile(arg1) {

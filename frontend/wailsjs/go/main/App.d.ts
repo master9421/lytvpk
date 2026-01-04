@@ -5,6 +5,8 @@ import {parser} from '../models';
 
 export function CancelDownloadTask(arg1:string):Promise<void>;
 
+export function CheckUpdate():Promise<main.UpdateInfo>;
+
 export function ClearCompletedTasks():Promise<void>;
 
 export function ConnectToServer(arg1:string):Promise<void>;
@@ -12,6 +14,8 @@ export function ConnectToServer(arg1:string):Promise<void>;
 export function DeleteVPKFile(arg1:string):Promise<void>;
 
 export function DeleteVPKFiles(arg1:Array<string>):Promise<void>;
+
+export function DoUpdate():Promise<string>;
 
 export function ExportServersToFile(arg1:string):Promise<string>;
 

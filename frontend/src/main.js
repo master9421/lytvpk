@@ -29,6 +29,8 @@ import {
   FetchServerInfo,
   ExportServersToFile,
   SelectFiles,
+  CheckUpdate,
+  DoUpdate,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn, OnFileDrop, BrowserOpenURL } from '../wailsjs/runtime/runtime';
@@ -78,6 +80,7 @@ function initializeApp() {
   setupEventListeners();
   setupWailsEvents();
   checkInitialDirectory();
+  checkAndInstallUpdate();
 }
 
 // 设置事件监听器
@@ -97,6 +100,12 @@ function setupEventListeners() {
   document.getElementById('enable-selected-btn').addEventListener('click', enableSelected);
   document.getElementById('disable-selected-btn').addEventListener('click', disableSelected);
   document.getElementById('delete-selected-btn').addEventListener('click', deleteSelected);
+
+  // 检查更新按钮
+  const checkUpdateBtn = document.getElementById('check-update-btn');
+  if (checkUpdateBtn) {
+    checkUpdateBtn.addEventListener('click', manualCheckUpdate);
+  }
 
   // 重置筛选按钮
   document.getElementById('reset-filter-btn').addEventListener('click', resetFilters);
@@ -3018,4 +3027,109 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// 检查更新 (自动检查用)
+async function checkAndInstallUpdate() {
+    try {
+        const info = await CheckUpdate();
+        
+        // 更新关于页面的版本显示
+        const verDisplay = document.getElementById('current-version-display');
+        if (verDisplay) {
+            verDisplay.textContent = `v${info.current_ver}`;
+        }
+
+        if (info.error) {
+            console.error("检查更新出错:", info.error);
+            return;
+        }
+
+        if (info.has_update) {
+            const msg = `发现新版本 v${info.latest_ver}！\n\n当前版本: v${info.current_ver}\n\n更新内容:\n${info.release_note}\n\n是否立即更新并重启？`;
+            
+            if (confirm(msg)) {
+                await performUpdate();
+            }
+        } else {
+            console.log("当前已是最新版本");
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 手动检查更新 (按钮触发)
+async function manualCheckUpdate() {
+    const btn = document.getElementById('check-update-btn');
+    const msgDiv = document.getElementById('update-status-msg');
+    const verDisplay = document.getElementById('current-version-display');
+    
+    if (!btn) return;
+    
+    btn.disabled = true;
+    btn.textContent = '检查中...';
+    msgDiv.classList.add('hidden');
+    msgDiv.className = 'update-msg hidden'; // reset classes
+
+    try {
+        const info = await CheckUpdate();
+        
+        if (verDisplay) {
+            verDisplay.textContent = `v${info.current_ver}`;
+        }
+
+        if (info.error) {
+            msgDiv.textContent = "检查失败: " + info.error;
+            msgDiv.classList.add('error');
+            msgDiv.classList.remove('hidden');
+        } else if (info.has_update) {
+            msgDiv.innerHTML = `发现新版本: <strong>v${info.latest_ver}</strong>`;
+            msgDiv.classList.add('success');
+            msgDiv.classList.remove('hidden');
+            
+            if (confirm(`发现新版本 v${info.latest_ver}！\n是否立即更新？`)) {
+                await performUpdate();
+            }
+        } else {
+            msgDiv.textContent = `当前已是最新版本 (v${info.latest_ver})`;
+            msgDiv.classList.add('success');
+            msgDiv.classList.remove('hidden');
+        }
+    } catch (e) {
+        msgDiv.textContent = "发生错误: " + e;
+        msgDiv.classList.add('error');
+        msgDiv.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '检查更新';
+    }
+}
+
+// 执行更新逻辑
+async function performUpdate() {
+    // 显示全局加载提示
+    const btn = document.getElementById('refresh-btn');
+    if(btn) btn.textContent = '正在更新...';
+    
+    // 也可以在关于页面显示状态
+    const updateBtn = document.getElementById('check-update-btn');
+    if(updateBtn) {
+        updateBtn.disabled = true;
+        updateBtn.textContent = '正在下载...';
+    }
+
+    const result = await DoUpdate();
+    
+    if (result === "success") {
+        alert("更新成功！程序将自动关闭，请手动重启。");
+        window.runtime.Quit();
+    } else {
+        alert("更新失败: " + result);
+        if(btn) btn.textContent = '刷新';
+        if(updateBtn) {
+            updateBtn.disabled = false;
+            updateBtn.textContent = '检查更新';
+        }
+    }
 }
