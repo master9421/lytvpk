@@ -46,9 +46,9 @@ var MirrorList = []string{
 	"https://gh.llkk.cc/",
 }
 
-// fetchLatestRelease 获取最新版本信息 (直连 API)
-func fetchLatestRelease(repo string) (*GithubRelease, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
+// fetchReleases 获取最近的版本列表
+func fetchReleases(repo string) ([]GithubRelease, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=10", repo)
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -68,12 +68,12 @@ func fetchLatestRelease(repo string) (*GithubRelease, error) {
 		return nil, fmt.Errorf("status: %s", resp.Status)
 	}
 
-	var release GithubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+	var releases []GithubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 		return nil, err
 	}
 
-	return &release, nil
+	return releases, nil
 }
 
 // fetchLatestTagFromMirror 通过镜像获取最新 Tag (解析重定向)
@@ -114,8 +114,52 @@ func (a *App) CheckUpdate() UpdateInfo {
 	var release *GithubRelease
 	var fetchErr error
 
-	// 2. 尝试直连 GitHub API
-	release, fetchErr = fetchLatestRelease(GithubRepo)
+	// 2. 尝试直连 GitHub API 获取列表
+	releases, err := fetchReleases(GithubRepo)
+	if err == nil && len(releases) > 0 {
+		// 寻找最新版本
+		var bestRel GithubRelease
+		var maxVer semver.Version
+		found := false
+
+		for _, r := range releases {
+			v, err := semver.ParseTolerant(r.TagName)
+			if err != nil {
+				continue
+			}
+			if !found || v.GT(maxVer) {
+				maxVer = v
+				bestRel = r
+				found = true
+			}
+		}
+
+		if found {
+			// 如果有更新，聚合日志
+			if maxVer.GT(vCurrent) {
+				var sb strings.Builder
+				for _, r := range releases {
+					v, err := semver.ParseTolerant(r.TagName)
+					if err != nil {
+						continue
+					}
+					if v.GT(vCurrent) {
+						sb.WriteString(fmt.Sprintf("【%s】\n%s\n\n", r.TagName, r.Body))
+					}
+				}
+				bestRel.Body = sb.String()
+			}
+			release = &bestRel
+		} else {
+			fetchErr = fmt.Errorf("no valid versions found")
+		}
+	} else {
+		if err != nil {
+			fetchErr = err
+		} else {
+			fetchErr = fmt.Errorf("empty release list")
+		}
+	}
 
 	// 3. 如果直连失败，尝试遍历镜像源
 	if fetchErr != nil {
