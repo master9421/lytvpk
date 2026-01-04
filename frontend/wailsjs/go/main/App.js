@@ -6,6 +6,10 @@ export function CancelDownloadTask(arg1) {
   return window['go']['main']['App']['CancelDownloadTask'](arg1);
 }
 
+export function CheckConflicts() {
+  return window['go']['main']['App']['CheckConflicts']();
+}
+
 export function CheckUpdate() {
   return window['go']['main']['App']['CheckUpdate']();
 }

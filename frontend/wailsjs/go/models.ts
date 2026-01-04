@@ -1,5 +1,53 @@
 export namespace main {
 	
+	export class ConflictGroup {
+	    vpk_files: string[];
+	    files: string[];
+	    severity: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ConflictGroup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.vpk_files = source["vpk_files"];
+	        this.files = source["files"];
+	        this.severity = source["severity"];
+	    }
+	}
+	export class ConflictResult {
+	    total_conflicts: number;
+	    conflict_groups: ConflictGroup[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ConflictResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total_conflicts = source["total_conflicts"];
+	        this.conflict_groups = this.convertValues(source["conflict_groups"], ConflictGroup);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class DownloadTask {
 	    id: string;
 	    workshop_id: string;

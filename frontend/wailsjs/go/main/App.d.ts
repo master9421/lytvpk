@@ -5,6 +5,8 @@ import {parser} from '../models';
 
 export function CancelDownloadTask(arg1:string):Promise<void>;
 
+export function CheckConflicts():Promise<main.ConflictResult>;
+
 export function CheckUpdate():Promise<main.UpdateInfo>;
 
 export function ClearCompletedTasks():Promise<void>;

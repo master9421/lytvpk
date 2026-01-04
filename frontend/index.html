@@ -85,6 +85,9 @@
               <button id="reset-filter-btn" class="btn btn-small btn-outline">
                 <span class="icon">↻</span> 重置筛选
               </button>
+              <button id="conflict-check-btn" class="btn btn-small btn-outline" title="检测Mod冲突">
+                <span class="icon">⚠</span> 冲突检测
+              </button>
             </div>
           </div>
           
@@ -557,6 +560,50 @@
         </div>
       </div>
 
+    </div>    <!-- 冲突检测弹窗 -->
+    <div id="conflict-modal" class="modal hidden">
+      <div class="modal-content conflict-modal-content">
+        <div class="modal-header">
+          <h2>Mod冲突检测</h2>
+          <button class="close-btn" id="close-conflict-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="conflict-progress-container" class="progress-container hidden">
+            <div class="progress-bar-bg">
+              <div id="conflict-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+            <p id="conflict-progress-text">准备开始...</p>
+          </div>
+          
+          <div id="conflict-results" class="conflict-results hidden">
+            <div class="conflict-toolbar">
+              <div class="conflict-summary">
+                <span class="icon">⚠</span> 发现 <span id="conflict-count">0</span> 组冲突
+              </div>
+              <div class="conflict-filters">
+                <button class="btn btn-small filter-btn active" data-filter="critical">严重</button>
+                <button class="btn btn-small filter-btn" data-filter="warning">警告</button>
+                <button class="btn btn-small filter-btn" data-filter="info">普通</button>
+                <button class="btn btn-small filter-btn" data-filter="all">全部</button>
+              </div>
+            </div>
+            <div id="conflict-list" class="conflict-list">
+              <!-- 动态生成冲突列表 -->
+            </div>
+          </div>
+          
+          <div id="conflict-empty" class="conflict-empty hidden">
+            <div class="empty-state">
+              <span class="icon">✓</span>
+              <p>未发现Mod冲突</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="start-conflict-check-btn">开始检测</button>
+          <button class="btn btn-secondary" id="close-conflict-btn">关闭</button>
+        </div>
+      </div>
     </div>
     <script src="./src/main.js?v=1.6" type="module"></script>
   </body>
