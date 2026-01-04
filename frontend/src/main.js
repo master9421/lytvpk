@@ -1864,13 +1864,66 @@ function syncSelectedFiles() {
   });
 }
 
+// 错误队列
+let errorQueue = [];
+let errorTimer = null;
+
 // 错误处理
 function handleError(errorInfo) {
   console.error('应用错误:', errorInfo);
-  showError(`${errorInfo.type}: ${errorInfo.message}`);
+  errorQueue.push(errorInfo);
+  
+  if (errorTimer) {
+    clearTimeout(errorTimer);
+  }
+  
+  // 300ms 防抖，聚合短时间内的错误
+  errorTimer = setTimeout(processErrorQueue, 300);
 }
 
-function showError(message) {
+function processErrorQueue() {
+  if (errorQueue.length === 0) return;
+  
+  const errors = [...errorQueue];
+  errorQueue = []; // 清空队列
+  
+  if (errors.length === 1) {
+    const errorInfo = errors[0];
+    let title = errorInfo.type === "VPK解析" ? "解析错误" : errorInfo.type;
+    let msg = `<strong>${title}</strong><br>`;
+    
+    if (errorInfo.file) {
+        const fileName = errorInfo.file.split(/[\\/]/).pop();
+        msg += `文件名：${fileName}<br>内容：${errorInfo.message}`;
+    } else {
+        msg += `内容：${errorInfo.message}`;
+    }
+    showError(msg, 5000);
+  } else {
+    // 多个错误聚合显示
+    const type = errors[0].type === "VPK解析" ? "解析错误" : errors[0].type;
+    let msg = `<strong>${type} (共${errors.length}个文件)</strong><br>`;
+    
+    // 显示前3个详情
+    const maxShow = 3;
+    for (let i = 0; i < Math.min(errors.length, maxShow); i++) {
+        const err = errors[i];
+        const fileName = err.file ? err.file.split(/[\\/]/).pop() : '未知文件';
+        msg += `<div style="margin-top:4px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:2px;">
+            文件名：${fileName}<br>
+            <span style="opacity:0.8; font-size:0.9em;">内容：${err.message}</span>
+        </div>`;
+    }
+    
+    if (errors.length > maxShow) {
+        msg += `<div style="margin-top:4px; font-style:italic;">...以及其他 ${errors.length - maxShow} 个文件</div>`;
+    }
+    
+    showError(msg, 8000); // 多个错误显示时间长一点
+  }
+}
+
+function showError(message, duration = 3000) {
   // 创建错误提示
   const errorDiv = document.createElement('div');
   errorDiv.className = 'error-notification';
@@ -1884,12 +1937,12 @@ function showError(message) {
 
   document.body.appendChild(errorDiv);
 
-  // 3秒后自动消失
+  // 自动消失
   setTimeout(() => {
     if (errorDiv.parentNode) {
       errorDiv.parentNode.removeChild(errorDiv);
     }
-  }, 3000);
+  }, duration);
 }
 
 // 通用通知函数
