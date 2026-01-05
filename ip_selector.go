@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -12,9 +13,8 @@ import (
 	"time"
 )
 
-// Embedded Steam CDN IP list
-// These are example IPs. In a real scenario, this list should be comprehensive.
-var steamCDNIPs = []string{
+// Embedded Steam CDN IP list (Fallback)
+var defaultSteamCDNIPs = []string{
 	"104.116.243.163",
 	"104.116.243.72",
 	"2.17.107.170",
@@ -24,6 +24,27 @@ var steamCDNIPs = []string{
 	"23.52.74.14",
 	"23.212.62.72",
 	"23.212.62.73",
+}
+
+func fetchRemoteIPs(domain string) ([]string, error) {
+	apiURL := fmt.Sprintf("https://lytvpk-get-ips.laoyutang.cn/?domain=%s", domain)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Get(apiURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status: %d", resp.StatusCode)
+	}
+
+	var ips []string
+	if err := json.NewDecoder(resp.Body).Decode(&ips); err != nil {
+		return nil, err
+	}
+	return ips, nil
 }
 
 type IPSelector struct {
@@ -56,9 +77,17 @@ func (s *IPSelector) refreshBestIP(testUrl string) string {
 		return s.cachedBestIP
 	}
 
-	// Copy base IPs
-	candidateIPs := make([]string, len(steamCDNIPs))
-	copy(candidateIPs, steamCDNIPs)
+	// Fetch remote IPs
+	var candidateIPs []string
+	remoteIPs, err := fetchRemoteIPs("cdn.steamusercontent.com")
+	if err == nil && len(remoteIPs) > 0 {
+		fmt.Printf("[IPSelector] Fetched %d IPs from remote API\n", len(remoteIPs))
+		candidateIPs = remoteIPs
+	} else {
+		fmt.Printf("[IPSelector] Failed to fetch remote IPs (using built-in): %v\n", err)
+		candidateIPs = make([]string, len(defaultSteamCDNIPs))
+		copy(candidateIPs, defaultSteamCDNIPs)
+	}
 
 	// Resolve via 8.8.8.8
 	fmt.Println("[IPSelector] Resolving cdn.steamusercontent.com via 8.8.8.8...")
