@@ -34,6 +34,7 @@ import {
   GetMirrors,
   AutoDiscoverAddons,
   ExportVPKFilesToZip,
+  RenameVPKFile,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn, OnFileDrop, BrowserOpenURL } from '../wailsjs/runtime/runtime';
@@ -420,6 +421,25 @@ function setupEventListeners() {
         e.preventDefault();
         e.stopPropagation();
         moveFileToAddons(filePath);
+      }
+    }
+
+    // 处理重命名按钮点击
+    const renameBtn = e.target.closest('.rename-btn[data-action="rename"]');
+    if (renameBtn) {
+      const filePath = renameBtn.getAttribute('data-file-path');
+      if (filePath) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 关闭下拉菜单
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+          d.classList.add('hidden');
+          const fileItem = d.closest('.file-item');
+          if (fileItem) fileItem.classList.remove('active-dropdown');
+        });
+
+        renameFile(filePath);
       }
     }
 
@@ -1418,6 +1438,9 @@ function createFileItem(file) {
                     <button class="dropdown-item hide-btn" data-file-path="${file.path}" data-action="hide">
                         <span class="btn-icon">${hideBtnIcon}</span> ${hideBtnText}
                     </button>
+                    <button class="dropdown-item rename-btn" data-file-path="${file.path}" data-action="rename">
+                        <span class="btn-icon">✏️</span> 重命名
+                    </button>
                     <button class="dropdown-item open-location-btn" data-file-path="${file.path}" data-action="open-location">
                         <span class="btn-icon">📂</span> 位置
                     </button>
@@ -1695,6 +1718,92 @@ async function exportZipSelected() {
       cleanup();
     }
   }
+}
+
+// 重命名文件
+async function renameFile(filePath) {
+    const file = appState.vpkFiles.find(f => f.path === filePath);
+    if (!file) return;
+
+    const fileName = file.name;
+    const isHidden = fileName.startsWith('_');
+    
+    // 去除前缀 _ 和后缀 .vpk
+    let editName = fileName;
+    if (isHidden) {
+        editName = editName.substring(1);
+    }
+    if (editName.toLowerCase().endsWith('.vpk')) {
+        editName = editName.substring(0, editName.length - 4);
+    }
+
+    // 显示自定义重命名模态框
+    const modal = document.getElementById('rename-modal');
+    const input = document.getElementById('rename-input');
+    const confirmBtn = document.getElementById('confirm-rename-btn');
+    const cancelBtn = document.getElementById('cancel-rename-btn');
+    const closeBtn = document.getElementById('close-rename-modal-btn');
+
+    input.value = editName;
+    modal.classList.remove('hidden');
+    input.focus();
+    input.select();
+
+    // 清理之前的事件监听器
+    const cleanup = () => {
+        modal.classList.add('hidden');
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+        closeBtn.onclick = null;
+        input.onkeydown = null;
+    };
+
+    // 确认重命名逻辑
+    const doRename = async () => {
+        const newName = input.value.trim();
+        if (!newName) {
+            showError('文件名不能为空');
+            return;
+        }
+
+        if (newName === editName) {
+            cleanup();
+            return;
+        }
+
+        // 组装新文件名
+        let finalName = newName;
+        if (!finalName.toLowerCase().endsWith('.vpk')) {
+            finalName += '.vpk';
+        }
+        if (isHidden) {
+            finalName = '_' + finalName;
+        }
+
+        try {
+            await RenameVPKFile(filePath, finalName);
+            showNotification('重命名成功', 'success');
+            cleanup();
+            await refreshFilesKeepFilter();
+        } catch (error) {
+            console.error('重命名失败:', error);
+            showError('重命名失败: ' + error);
+        }
+    };
+
+    confirmBtn.onclick = doRename;
+    
+    cancelBtn.onclick = cleanup;
+    closeBtn.onclick = cleanup;
+
+    // 回车确认，ESC取消
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            doRename();
+        } else if (e.key === 'Escape') {
+            cleanup();
+        }
+    };
 }
 
 // 批量删除选中的文件

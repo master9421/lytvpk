@@ -584,6 +584,30 @@
         </div>
       </div>
 
+      <!-- 重命名对话框 -->
+      <div id="rename-modal" class="modal hidden">
+        <div class="modal-content modal-small">
+          <div class="modal-header">
+            <h2>重命名文件</h2>
+            <button id="close-rename-modal-btn" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="rename-input" style="display: block; margin-bottom: 8px; font-weight: 500;">新文件名</label>
+              <div class="input-group" style="display: flex; align-items: center;">
+                <input type="text" id="rename-input" class="form-input" style="flex: 1;" placeholder="输入新文件名">
+                <span class="input-suffix" style="margin-left: 8px; color: var(--text-tertiary);">.vpk</span>
+              </div>
+              <p class="help-text" style="margin-top: 8px; font-size: 0.85rem; color: var(--text-tertiary);">无需输入 .vpk 后缀，保持原有隐藏状态</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="cancel-rename-btn" class="btn btn-secondary">取消</button>
+            <button id="confirm-rename-btn" class="btn btn-primary">确定</button>
+          </div>
+        </div>
+      </div>
+
     </div>    <!-- 冲突检测弹窗 -->
     <div id="conflict-modal" class="modal hidden">
       <div class="modal-content conflict-modal-content">

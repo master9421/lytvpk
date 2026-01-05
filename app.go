@@ -1675,3 +1675,41 @@ func (a *App) ExportVPKFilesToZip(files []string) (string, error) {
 
 	return fmt.Sprintf("成功导出 %d 个文件到 %s", len(files), zipPath), nil
 }
+
+// RenameVPKFile 重命名VPK文件
+func (a *App) RenameVPKFile(filePath string, newFilename string) (string, error) {
+	dir := filepath.Dir(filePath)
+
+	// 确保新文件名以 .vpk 结尾
+	if !strings.HasSuffix(strings.ToLower(newFilename), ".vpk") {
+		newFilename += ".vpk"
+	}
+
+	newPath := filepath.Join(dir, newFilename)
+
+	// Check if target exists
+	if _, err := os.Stat(newPath); err == nil {
+		return "", fmt.Errorf("目标文件已存在: %s", newFilename)
+	}
+
+	err := os.Rename(filePath, newPath)
+	if err != nil {
+		return "", err
+	}
+
+	// 更新缓存
+	if cached, ok := a.vpkCache.Load(filePath); ok {
+		cache := cached.(*VPKFileCache)
+		cache.File.Path = newPath
+		cache.File.Name = filepath.Base(newPath)
+		// Location 应该不变，因为是在同目录下重命名
+
+		a.vpkCache.Delete(filePath)
+		a.vpkCache.Store(newPath, cache)
+	} else {
+		// 如果不在缓存中，重新处理
+		a.processVPKFileWithCache(newPath)
+	}
+
+	return newPath, nil
+}
