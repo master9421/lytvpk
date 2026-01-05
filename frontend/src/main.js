@@ -104,6 +104,7 @@ function setupEventListeners() {
       showHiddenCheckbox.checked = appState.showHidden;
       showHiddenCheckbox.addEventListener('change', (e) => {
           appState.showHidden = e.target.checked;
+          deselectAll(); // 切换显示模式时清除选中状态
           performSearch();
       });
   }
@@ -893,6 +894,14 @@ async function refreshFilesKeepFilter() {
     // 重新执行搜索以应用筛选
     await performSearch();
 
+    // 清理无效的选中项（移除已不存在的文件）
+    const currentFilePaths = new Set(appState.allVpkFiles.map(f => f.path));
+    for (const path of appState.selectedFiles) {
+        if (!currentFilePaths.has(path)) {
+            appState.selectedFiles.delete(path);
+        }
+    }
+
     // 更新状态栏
     updateStatusBar();
 
@@ -1535,15 +1544,14 @@ function selectAll() {
 
 // 取消全选
 function deselectAll() {
-  const checkboxes = document.querySelectorAll('.file-checkbox');
+  appState.selectedFiles.clear();
   
-  checkboxes.forEach((checkbox, index) => {
+  const checkboxes = document.querySelectorAll('.file-checkbox');
+  checkboxes.forEach((checkbox) => {
     checkbox.checked = false;
-    const file = appState.vpkFiles[index];
-    if (file) {
-      toggleFileSelection(file.path, false);
-    }
   });
+  
+  updateStatusBar();
 }
 
 // 启用选中的文件
