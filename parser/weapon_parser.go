@@ -52,6 +52,7 @@ func DetectWeaponType(filename string, secondaryTags map[string]bool) {
 		// 冲锋枪
 		"smg_uzi":      "SMG",
 		"w_smg_uzi":    "SMG",
+		"/smg/":        "SMG", // 为了兼容只包含 smg 目录路径的文件（通常是 UZI）
 		"smg_silenced": "SMG_silenced",
 		"w_smg_mp5":    "SMG_silenced",
 		"smg_mp5":      "MP5",
