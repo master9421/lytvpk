@@ -3131,8 +3131,14 @@ function createServerListItem(server, index) {
           </svg>
           连接
         </button>
-        <button class="btn btn-small btn-outline server-more-btn" title="更多操作" data-index="${index}">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="btn btn-small btn-outline refresh-server-btn" title="刷新" data-address="${server.address}" data-index="${index}" style="padding: 0; width: 2rem; justify-content: center;">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.1em; height: 1.1em;">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+            </svg>
+        </button>
+        <button class="btn btn-small btn-outline server-more-btn" title="更多操作" data-index="${index}" style="padding: 0; width: 2rem; justify-content: center;">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.1em; height: 1.1em;">
                 <circle cx="12" cy="12" r="1"></circle>
                 <circle cx="12" cy="5" r="1"></circle>
                 <circle cx="12" cy="19" r="1"></circle>
@@ -3155,6 +3161,25 @@ function createServerListItem(server, index) {
             const target = e.target.closest('.connect-server-btn');
             const address = target.dataset.address;
             connectServer(address);
+        });
+    }
+
+    // 绑定刷新按钮事件
+    const refreshBtn = li.querySelector('.refresh-server-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            const target = e.target.closest('.refresh-server-btn');
+            const icon = target.querySelector('svg');
+            if(icon) icon.classList.add('spinning');
+            target.disabled = true;
+
+            const address = target.dataset.address;
+            const idx = target.dataset.index;
+            
+            fetchServerInfo(address, idx).finally(() => {
+                if(icon) icon.classList.remove('spinning');
+                target.disabled = false;
+            });
         });
     }
     
