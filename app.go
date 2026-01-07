@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net"
-	"net/http"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -78,7 +77,6 @@ type App struct {
 	rootDir       string
 	goroutinePool *ants.Pool
 	forceClose    bool
-	httpClient    *http.Client
 	restyClient   *resty.Client
 }
 
@@ -86,31 +84,13 @@ type App struct {
 func NewApp() *App {
 	pool, _ := ants.NewPool(rt.GOMAXPROCS(0)) // 创建协程池
 
-	// 共享的 Transport 配置，确保连接池复用
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
 	// 初始化 Resty 客户端
 	client := resty.New()
-	client.SetTransport(transport) // 设置 Transport 以使用连接池
-	client.SetTimeout(10 * time.Second)
-	client.SetRetryCount(3)
-	client.SetRetryWaitTime(1 * time.Second)
-	client.SetRetryMaxWaitTime(5 * time.Second)
+	client.SetTimeout(2 * time.Second)
 
 	return &App{
 		goroutinePool: pool,
 		restyClient:   client,
-		httpClient: &http.Client{
-			Timeout:   10 * time.Second,
-			Transport: transport,
-		},
 	}
 }
 
