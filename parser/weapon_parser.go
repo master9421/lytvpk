@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"regexp"
 	"strings"
 
 	"git.lubar.me/ben/valve/vpk"
@@ -118,7 +119,15 @@ func DetectWeaponTypeFromMetadata(text string, secondaryTags map[string]bool) {
 	}
 
 	for _, rule := range rules {
-		if strings.Contains(lowerText, rule.keyword) {
+		isMatch := false
+		if rule.keyword == "scar" {
+			// 特殊处理 scar，防止匹配到 oscar 等词
+			isMatch, _ = regexp.MatchString(`\bscar\b`, lowerText)
+		} else {
+			isMatch = strings.Contains(lowerText, rule.keyword)
+		}
+
+		if isMatch {
 			secondaryTags[rule.tag] = true
 			return
 		}
@@ -141,7 +150,7 @@ func DetectWeaponType(filename string, secondaryTags map[string]bool) {
 		"m60":          "M60",
 
 		// 狙击枪
-		"sniper_awp":      "大狙",
+		"awp":             "大狙",
 		"sniper_military": "军狙",
 		"sniper_a":        "军狙",
 		"hunting_rifle":   "猎枪",
