@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"git.lubar.me/ben/valve/vpk"
@@ -68,7 +69,52 @@ func ParseVPKFile(filePath string) (*VPKFile, error) {
 
 	vpkFile.Chapters = chapters
 
+	// 检查自定义标签并覆盖
+	if pTag, sTags, _, ok := ParseFilenameTags(vpkFile.Name); ok {
+		// 只有当有明确的自定义标签结构时才覆盖
+		// 允许 PrimaryTag 为空字符串（如果用户删除了）?
+		// 但通常 [Primary,Secondary] 格式意味着至少有一个为空?
+		// 如果 [] 空的，len(tagParts)==1 ("") -> primaryTag=""
+		vpkFile.PrimaryTag = pTag
+		vpkFile.SecondaryTags = sTags
+	}
+
 	return vpkFile, nil
+}
+
+var tagRegex = regexp.MustCompile(`^(_)?\[(.*?)\](.*)$`)
+
+// ParseFilenameTags 解析文件名中的标签
+// 返回: primaryTag, secondaryTags, realNameWithoutTags, hasTags
+func ParseFilenameTags(filename string) (string, []string, string, bool) {
+	matches := tagRegex.FindStringSubmatch(filename)
+	if matches == nil {
+		return "", nil, filename, false
+	}
+
+	// matches[1] 是前缀 "_"
+	// matches[2] 是标签内容
+	// matches[3] 是剩余文件名
+
+	// hiddenPrefix := matches[1]
+	tagsContent := matches[2]
+	// realName := hiddenPrefix + matches[3]
+
+	tagParts := strings.Split(tagsContent, ",")
+	var primaryTag string
+	var secondaryTags []string
+
+	if len(tagParts) > 0 {
+		primaryTag = strings.TrimSpace(tagParts[0])
+		for _, t := range tagParts[1:] {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				secondaryTags = append(secondaryTags, t)
+			}
+		}
+	}
+
+	return primaryTag, secondaryTags, matches[1] + matches[3], true
 }
 
 // GetPrimaryTags 获取所有主要标签

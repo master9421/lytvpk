@@ -35,6 +35,7 @@ import {
   AutoDiscoverAddons,
   ExportVPKFilesToZip,
   RenameVPKFile,
+  SetVPKTags,
   GetMapName,
 } from '../wailsjs/go/main/App';
 
@@ -422,6 +423,25 @@ function setupEventListeners() {
         e.preventDefault();
         e.stopPropagation();
         moveFileToAddons(filePath);
+      }
+    }
+
+    // 处理设置标签按钮点击
+    const setTagsBtn = e.target.closest('.set-tags-btn[data-action="set-tags"]');
+    if (setTagsBtn) {
+      const filePath = setTagsBtn.getAttribute('data-file-path');
+      if (filePath) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 关闭下拉菜单
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+          d.classList.add('hidden');
+          const fileItem = d.closest('.file-item');
+          if (fileItem) fileItem.classList.remove('active-dropdown');
+        });
+
+        openSetTagsModal(filePath);
       }
     }
 
@@ -1439,6 +1459,9 @@ function createFileItem(file) {
                     <button class="dropdown-item hide-btn" data-file-path="${file.path}" data-action="hide">
                         <span class="btn-icon">${hideBtnIcon}</span> ${hideBtnText}
                     </button>
+                    <button class="dropdown-item set-tags-btn" data-file-path="${file.path}" data-action="set-tags">
+                        <span class="btn-icon">🏷️</span> 设置标签
+                    </button>
                     <button class="dropdown-item rename-btn" data-file-path="${file.path}" data-action="rename">
                         <span class="btn-icon">✏️</span> 重命名
                     </button>
@@ -1729,8 +1752,16 @@ async function renameFile(filePath) {
     const fileName = file.name;
     const isHidden = fileName.startsWith('_');
     
-    // 去除前缀 _ 和后缀 .vpk
+    // 隐藏标签部分，只显示文件名
     let editName = fileName;
+    const tagMatch = fileName.match(/^(_)?\[(.*?)\](.*)$/);
+    if (tagMatch) {
+         // tagMatch[1] 是前缀 "_" (如果存在)
+         // tagMatch[3] 是剩余的文件名 (e.g. "my_map.vpk")
+         editName = (tagMatch[1] || '') + tagMatch[3];
+    }
+
+    // 去除前缀 _ 和后缀 .vpk
     if (isHidden) {
         editName = editName.substring(1);
     }
@@ -4108,3 +4139,133 @@ function getFileCategory(filePath) {
 
     return { label: "其他", className: "tag-info" };
 }
+
+// --- Custom Tags Management ---
+
+let currentEditingTagsFile = null;
+let currentSecondaryTags = [];
+
+function openSetTagsModal(filePath) {
+    // try to find in appState.vpkFiles (current view) or appState.allVpkFiles (all)
+    const file = (appState.vpkFiles || []).find(f => f.path === filePath) || 
+                 (appState.allVpkFiles || []).find(f => f.path === filePath);
+    
+    if (!file) {
+        console.error("File not found for setting tags:", filePath);
+        return;
+    }
+
+    currentEditingTagsFile = filePath;
+    currentSecondaryTags = [...(file.secondaryTags || [])];
+
+    const modal = document.getElementById('set-tags-modal');
+    const primarySelect = document.getElementById('primary-tag-select');
+    const input = document.getElementById('new-secondary-tag-input');
+
+    if (primarySelect) primarySelect.value = file.primaryTag || "";
+    renderEditTagsList();
+    if (input) input.value = "";
+    
+    if (modal) modal.classList.remove('hidden');
+}
+
+function renderEditTagsList() {
+    const container = document.getElementById('secondary-tags-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    currentSecondaryTags.forEach((tag, index) => {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'tag-badge';
+        tagEl.innerHTML = `
+            ${tag}
+            <span class="tag-remove-btn" title="删除">&times;</span>
+        `;
+        tagEl.querySelector('.tag-remove-btn').addEventListener('click', () => {
+             currentSecondaryTags.splice(index, 1);
+             renderEditTagsList();
+        });
+        container.appendChild(tagEl);
+    });
+}
+
+// Clear All Tags Button logic
+const clearTagsBtn = document.getElementById('clear-tags-btn');
+if (clearTagsBtn) {
+    clearTagsBtn.addEventListener('click', () => {
+        // Clear primary tag
+        const primarySelect = document.getElementById('primary-tag-select');
+        if (primarySelect) primarySelect.value = "";
+        
+        // Clear secondary tags
+        currentSecondaryTags = [];
+        renderEditTagsList();
+    });
+}
+
+// Tag Modal Event Listeners
+const addTagBtn = document.getElementById('add-secondary-tag-btn');
+if (addTagBtn) {
+    addTagBtn.addEventListener('click', () => {
+        const input = document.getElementById('new-secondary-tag-input');
+        const val = input.value.trim();
+        if (val && !currentSecondaryTags.includes(val)) {
+            currentSecondaryTags.push(val);
+            input.value = '';
+            renderEditTagsList();
+        }
+    });
+}
+
+const newTagInput = document.getElementById('new-secondary-tag-input');
+if (newTagInput) {
+    newTagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const val = e.target.value.trim();
+            if (val && !currentSecondaryTags.includes(val)) {
+                currentSecondaryTags.push(val);
+                e.target.value = '';
+                renderEditTagsList();
+            }
+        }
+    });
+}
+
+const appSaveTagsBtn = document.getElementById('save-tags-btn');
+if (appSaveTagsBtn) {
+    appSaveTagsBtn.addEventListener('click', async () => {
+        const modal = document.getElementById('set-tags-modal');
+        const primarySelect = document.getElementById('primary-tag-select');
+        
+        const pTag = primarySelect.value;
+        const sTags = currentSecondaryTags;
+        
+        try {
+            await SetVPKTags(currentEditingTagsFile, pTag, sTags);
+            modal.classList.add('hidden');
+            if (typeof showNotification === 'function') {
+                showNotification('标签已更新', 'success');
+            }
+            // Refresh
+            const refreshBtn = document.getElementById('refresh-btn');
+            if (refreshBtn) refreshBtn.click(); 
+        } catch (err) {
+            if (typeof showError === 'function') {
+                showError('更新标签失败: ' + err);
+            } else {
+                console.error(err);
+                alert('更新标签失败: ' + err);
+            }
+        }
+    });
+}
+
+const closeTagModalBtns = ['close-set-tags-modal-btn', 'cancel-set-tags-btn'];
+closeTagModalBtns.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+        btn.addEventListener('click', () => {
+             document.getElementById('set-tags-modal').classList.add('hidden');
+        });
+    }
+});

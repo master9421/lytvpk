@@ -166,6 +166,10 @@ export function SetRootDirectory(arg1) {
   return window['go']['main']['App']['SetRootDirectory'](arg1);
 }
 
+export function SetVPKTags(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetVPKTags'](arg1, arg2, arg3);
+}
+
 export function StartDownloadTask(arg1, arg2) {
   return window['go']['main']['App']['StartDownloadTask'](arg1, arg2);
 }

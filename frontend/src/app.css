@@ -191,7 +191,7 @@ body {
   line-height: var(--leading-tight);
   text-decoration: none;
   cursor: pointer;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
   transition: all var(--duration-150) var(--ease-out);
   position: relative;
   overflow: hidden;
@@ -338,6 +338,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -425,6 +426,7 @@ body {
   justify-content: space-between;
   padding: var(--spacing-4) var(--spacing-6);
   background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-light);
   position: relative;
@@ -588,7 +590,14 @@ body {
 
 .filter-row-tags {
   border-top: 1px solid var(--border-light);
-  padding-top: var(--spacing-1);
+  padding-top: 0.6rem;
+  padding-bottom: 0.2rem;
+  align-items: flex-start;
+}
+
+.hidden-filter-container {
+  margin-top: 0.3rem;
+  margin-right: 1.5rem;
 }
 
 .search-box {
@@ -865,7 +874,7 @@ body {
   font-size: var(--text-sm);
   color: var(--text-secondary);
   font-weight: 500;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
 }
 
 .toggle-switch:hover .toggle-slider {
@@ -1130,6 +1139,7 @@ body {
   justify-content: space-between;
   padding: var(--spacing-3) var(--spacing-6);
   background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-default);
   font-size: var(--text-sm);
@@ -1178,6 +1188,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   opacity: 0;
   visibility: hidden;
@@ -1259,6 +1270,7 @@ body {
   border-top: 1px solid var(--border-default);
   justify-content: flex-end;
   background: rgba(248, 250, 252, 0.8);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -1315,6 +1327,7 @@ body {
 
 #file-detail-modal .modal-footer .btn-secondary {
   background: rgba(255, 255, 255, 0.9) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   backdrop-filter: blur(10px) !important;
   border: 1px solid rgba(203, 213, 225, 0.5) !important;
   color: #475569 !important;
@@ -1621,6 +1634,7 @@ body {
   max-width: 28rem;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-light);
   animation: slideInRight var(--duration-300) var(--ease-out);
@@ -1687,8 +1701,6 @@ body {
 .success-close:hover,
 .info-close:hover {
   background: var(--bg-hover);
-  opacity: 1;
-}
   opacity: 1;
 }
 
@@ -1912,7 +1924,6 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 0.4rem;
 }
 
 .primary-tag-group{
@@ -2180,6 +2191,10 @@ body {
   border-top: 1px solid var(--border-light);
 }
 
+.ignore-update-btn {
+  margin-right: auto !important;
+}
+
 .task-item:hover {
   border-color: var(--primary-light) !important;
   box-shadow: var(--shadow-sm);
@@ -2193,9 +2208,18 @@ body {
 }
 
 /* 更多操作下拉菜单 */
-.more-actions-dropdown {
+.more-actions-dropdown,
+.batch-actions-dropdown-container {
   position: relative;
   display: inline-block;
+}
+
+.batch-dropdown-content {
+  bottom: 100% !important;
+  top: auto !important;
+  margin-bottom: 4px;
+  margin-top: 0;
+  right: 0;
 }
 
 .more-btn {
@@ -2422,7 +2446,7 @@ body {
   align-items: center;
   margin-bottom: 10px;
   cursor: pointer;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
 }
 
 .api-key-header h3 {
@@ -2779,9 +2803,9 @@ body {
   background: var(--bg-surface);
   color: var(--text-primary);
   font-size: 0.9em;
-  appearance: none; /* 移除原生样式 */
   -webkit-appearance: none;
   -moz-appearance: none;
+  appearance: none; /* 移除原生样式 */
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -2880,3 +2904,294 @@ body {
     background-color: var(--primary-100);
 }
 
+
+/* Extracted styles for workshop modal */
+.input-label {
+  margin-bottom: 8px;
+  display: block;
+  font-weight: 500;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mt-30 {
+  margin-top: 30px;
+}
+
+.pt-20 {
+  padding-top: 20px;
+}
+
+.border-top-light {
+  border-top: 1px solid var(--border-light, #eee);
+}
+
+.workshop-actions {
+  text-align: right;
+  margin-top: 20px;
+  display: none;
+}
+
+.task-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.download-tasks-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.empty-tasks {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+}
+
+/* Extracted styles for server modal */
+.server-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.server-data-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-light);
+}
+
+.server-data-header {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  -webkit-user-select: none; user-select: none;
+}
+
+.server-data-header h3 {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.server-data-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Server details modal */
+.server-details-modal-content {
+  max-width: 600px;
+}
+
+.server-details-loading {
+  text-align: center;
+  padding: 20px;
+}
+
+.player-list-title {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.player-list-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Server form modal */
+.server-form-modal-content {
+  max-width: 450px;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.server-form-header {
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.server-form-title {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.form-group.mb-20 {
+  margin-bottom: 20px;
+}
+
+.form-group.mb-25 {
+  margin-bottom: 25px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.w-100px {
+  width: 100px;
+}
+
+.flex-align-center-gap-10 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.text-sm-tertiary {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+
+.server-form-footer {
+  background: transparent;
+  border-top: none;
+  padding: 0;
+  padding-top: 10px;
+  justify-content: flex-end;
+}
+
+.btn-padding-lg {
+  padding: 8px 20px;
+}
+
+/* Rename modal */
+.input-with-suffix-group {
+  display: flex;
+  align-items: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.ml-8 {
+  margin-left: 8px;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+/* Utilities */
+.d-none {
+  display: none !important;
+}
+
+.z-1070 {
+  z-index: 1070;
+}
+
+.z-1060 {
+  z-index: 1060;
+}
+
+.w-100-percent {
+  width: 100%;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+/* Set Tags Modal */
+.form-select-styled {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light, #eee);
+  background: var(--bg-surface, #f8fafc);
+  color: var(--text-primary, #333);
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.input-group-flex {
+  display: flex;
+  align-items: center;
+}
+
+.w-0 {
+  width: 0% !important;
+}
+
+/* Tag Styles in Modal */
+.tag-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1;
+    background: var(--bg-hover, #f1f5f9);
+    border: 1px solid var(--border-default, #cbd5e1);
+    color: var(--text-secondary, #475569);
+    transition: all 0.2s ease;
+}
+
+.tag-badge:hover {
+    background: var(--bg-active, #e2e8f0);
+    border-color: var(--border-strong, #94a3b8);
+}
+
+.tag-remove-btn {
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.tag-remove-btn:hover {
+    background-color: var(--danger, #ef4444);
+    color: white;
+    opacity: 1;
+}
+
+/* Clear Button Style in footer */
+.btn-danger-outline {
+    border: 1px solid var(--danger, #ef4444);
+    color: var(--danger, #ef4444);
+    background: transparent;
+}
+
+.btn-danger-outline:hover {
+    background: var(--danger, #ef4444);
+    color: white;
+}

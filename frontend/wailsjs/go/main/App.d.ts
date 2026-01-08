@@ -85,6 +85,8 @@ export function SelectFiles():Promise<Array<string>>;
 
 export function SetRootDirectory(arg1:string):Promise<void>;
 
+export function SetVPKTags(arg1:string,arg2:string,arg3:Array<string>):Promise<void>;
+
 export function StartDownloadTask(arg1:main.WorkshopFileDetails,arg2:boolean):Promise<string>;
 
 export function ToggleVPKFile(arg1:string):Promise<void>;
