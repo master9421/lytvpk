@@ -358,26 +358,66 @@ func parseAddonInfoFromFile(opener *vpk.Opener, addonInfoFile *vpk.File, vpkFile
 	// 解析每一行
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		// 跳过空行、注释和括号
-		if line == "" || strings.HasPrefix(line, "//") || line == "{" || line == "}" || strings.HasPrefix(line, "\"") {
+		// 跳过空行、注释
+		if line == "" || strings.HasPrefix(line, "//") {
 			continue
 		}
 
-		// VDF格式: key "value" 或 key		"value"
-		// 查找第一个和最后一个引号
-		firstQuote := strings.Index(line, "\"")
-		if firstQuote == -1 {
-			continue
-		}
+		var key, value string
 
-		lastQuote := strings.LastIndex(line, "\"")
-		if lastQuote <= firstQuote {
-			continue
-		}
+		// 检查键是否被引用 "key" "value"
+		if strings.HasPrefix(line, "\"") {
+			// 找到键的结束位置 (从第1个字符后开始查找第一个引号)
+			keyEnd := strings.Index(line[1:], "\"")
+			if keyEnd == -1 {
+				continue
+			}
+			keyEnd++ // 调整索引，因为我们切片了
 
-		// 提取键和值
-		key := strings.TrimSpace(line[:firstQuote])
-		value := line[firstQuote+1 : lastQuote]
+			key = line[1:keyEnd]
+
+			// 找到值的开始位置 (必须在键之后)
+			if keyEnd+1 >= len(line) {
+				continue
+			}
+			remainder := line[keyEnd+1:]
+
+			valStart := strings.Index(remainder, "\"")
+			if valStart == -1 {
+				continue
+			}
+
+			// 找到值的结束位置
+			valEnd := strings.LastIndex(remainder, "\"")
+			// 确保 valEnd 严格大于 valStart
+			if valEnd <= valStart {
+				continue
+			}
+
+			value = remainder[valStart+1 : valEnd]
+
+		} else {
+			// key "value" 模式 (遗留/宽松)
+			// 确保不以 { 或 } 开头，这些是结构标记
+			if strings.HasPrefix(line, "{") || strings.HasPrefix(line, "}") {
+				continue
+			}
+
+			// 找到值的开始位置
+			valStart := strings.Index(line, "\"")
+			if valStart == -1 {
+				continue
+			}
+
+			key = strings.TrimSpace(line[:valStart])
+
+			valEnd := strings.LastIndex(line, "\"")
+			if valEnd <= valStart {
+				continue
+			}
+
+			value = line[valStart+1 : valEnd]
+		}
 
 		// 根据键设置对应的值
 		switch strings.ToLower(key) {
