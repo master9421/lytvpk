@@ -475,6 +475,8 @@ func parseAddonInfoFromFile(opener *vpk.Opener, addonInfoFile *vpk.File, vpkFile
 			vpkFile.Version = value
 		case "addondescription":
 			vpkFile.Desc = value
+		case "addonurl0":
+			vpkFile.AddonURL0 = value
 		}
 	}
 }

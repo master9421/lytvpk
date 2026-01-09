@@ -246,6 +246,7 @@ export namespace parser {
 	    author: string;
 	    version: string;
 	    desc: string;
+	    addonURL0: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new VPKFile(source);
@@ -269,6 +270,7 @@ export namespace parser {
 	        this.author = source["author"];
 	        this.version = source["version"];
 	        this.desc = source["desc"];
+	        this.addonURL0 = source["addonURL0"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

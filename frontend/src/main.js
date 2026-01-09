@@ -1983,6 +1983,17 @@ window.showFileDetail = function (filePath) {
     descItem.style.display = 'none';
   }
 
+  // 链接信息（若有才显示）
+  const urlItem = document.getElementById('detail-vpk-url-item');
+  const urlLink = document.getElementById('detail-vpk-url');
+  if (file.addonURL0 && file.addonURL0 !== '') {
+    urlItem.style.display = 'grid';
+    urlLink.textContent = file.addonURL0;
+    urlLink.href = file.addonURL0;
+  } else {
+    urlItem.style.display = 'none';
+  }
+
   // 填充地图信息
   const mapInfoSection = document.getElementById('map-info-section');
   if (file.primaryTag === '地图') {

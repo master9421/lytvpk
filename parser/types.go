@@ -21,10 +21,11 @@ type VPKFile struct {
 	PreviewImage  string                 `json:"previewImage"` // Base64编码的预览图
 	LastModified  string                 `json:"lastModified"`
 	// addoninfo.txt 相关信息
-	Title   string `json:"title"`   // addontitle (必有)
-	Author  string `json:"author"`  // addonauthor (若有)
-	Version string `json:"version"` // addonversion (若有)
-	Desc    string `json:"desc"`    // addonDescription (若有)
+	Title     string `json:"title"`     // addontitle (必有)
+	Author    string `json:"author"`    // addonauthor (若有)
+	Version   string `json:"version"`   // addonversion (若有)
+	Desc      string `json:"desc"`      // addonDescription (若有)
+	AddonURL0 string `json:"addonURL0"` // addonURL0 (若有)
 }
 
 // Campaign 战役信息
