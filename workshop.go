@@ -210,7 +210,7 @@ func (a *App) GetWorkshopDetails(workshopUrl string) ([]WorkshopFileDetails, err
 }
 
 func (a *App) fetchWorkshopDetails(payload string) ([]WorkshopFileDetails, error) {
-	apiUrl := "https://steamworkshopdownloader.io/api/details/file"
+	apiUrl := "https://l4d2-workshop-parse.laoyutang.cn"
 
 	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer([]byte(payload)))
 	if err != nil {

@@ -48,8 +48,5 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "chat.tools.terminal.autoApprove": {
-    "type": true
   }
 }
