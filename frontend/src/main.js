@@ -2643,6 +2643,10 @@ function closeWorkshopModal() {
   currentWorkshopDetails = null;
 }
 
+// 工坊解析缓存
+const workshopCache = new Map();
+const CACHE_DURATION = 3600 * 1000; // 1小时
+
 async function checkWorkshopUrl() {
   const url = document.getElementById("workshop-url").value.trim();
   if (!url) {
@@ -2663,7 +2667,31 @@ async function checkWorkshopUrl() {
   downloadUrlInput.value = "";
 
   try {
-    const detailsList = await GetWorkshopDetails(url);
+    let detailsList;
+
+    // 检查缓存
+    if (workshopCache.has(url)) {
+      const cached = workshopCache.get(url);
+      if (Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log("使用缓存的工坊解析结果");
+        detailsList = cached.data;
+      } else {
+        workshopCache.delete(url);
+      }
+    }
+
+    if (!detailsList) {
+      detailsList = await GetWorkshopDetails(url);
+
+      // 写入缓存
+      if (detailsList && detailsList.length > 0) {
+        workshopCache.set(url, {
+          timestamp: Date.now(),
+          data: detailsList,
+        });
+      }
+    }
+
     currentWorkshopDetails = detailsList;
 
     result.innerHTML = ""; // Clear previous content
