@@ -82,6 +82,10 @@ export function ForceExit() {
   return window['go']['main']['App']['ForceExit']();
 }
 
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
 export function GetDownloadTasks() {
   return window['go']['main']['App']['GetDownloadTasks']();
 }

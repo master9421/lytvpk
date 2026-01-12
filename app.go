@@ -158,6 +158,11 @@ func (a *App) GetRootDirectory() string {
 	return a.rootDir
 }
 
+// GetAppVersion 获取当前版本号
+func (a *App) GetAppVersion() string {
+	return AppVersion
+}
+
 // ScanVPKFiles 扫描所有VPK文件（智能缓存版本）
 func (a *App) ScanVPKFiles() error {
 	if a.rootDir == "" {

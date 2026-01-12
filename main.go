@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"fmt"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -26,9 +25,10 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  fmt.Sprintf("LytVPK MOD管理器 v%s", AppVersion),
-		Width:  1400,
-		Height: 900,
+		Title:     "LytVPK MOD管理器",
+		Width:     1400,
+		Height:    900,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

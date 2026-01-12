@@ -1,5 +1,6 @@
 import "./style.css?v=2.7";
 import "./app.css?v=2.7";
+import "./titlebar.css";
 
 import {
   SetRootDirectory,
@@ -45,6 +46,9 @@ import {
   EventsOn,
   OnFileDrop,
   BrowserOpenURL,
+  WindowMinimise,
+  WindowToggleMaximise,
+  Quit,
 } from "../wailsjs/runtime/runtime";
 
 // LocalStorage 配置管理
@@ -103,6 +107,21 @@ function initializeApp() {
 
 // 设置事件监听器
 function setupEventListeners() {
+  // 窗口控制
+  const minBtn = document.getElementById("w-min-btn");
+  const maxBtn = document.getElementById("w-max-btn");
+  const closeBtn = document.getElementById("w-close-btn");
+
+  if (minBtn) minBtn.addEventListener("click", WindowMinimise);
+  if (maxBtn) maxBtn.addEventListener("click", WindowToggleMaximise);
+  if (closeBtn) closeBtn.addEventListener("click", Quit);
+
+  // 标题栏双击最大化/还原
+  const titleBar = document.querySelector(".title-drag-region");
+  if (titleBar) {
+    titleBar.addEventListener("dblclick", WindowToggleMaximise);
+  }
+
   // 目录选择
   document
     .getElementById("select-directory-btn")

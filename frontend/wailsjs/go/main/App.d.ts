@@ -43,6 +43,8 @@ export function FetchWorkshopList(arg1:main.WorkshopQueryOptions):Promise<main.W
 
 export function ForceExit():Promise<void>;
 
+export function GetAppVersion():Promise<string>;
+
 export function GetDownloadTasks():Promise<Array<main.DownloadTask>>;
 
 export function GetMapName(arg1:string):Promise<string>;
