@@ -37,6 +37,8 @@ import {
   RenameVPKFile,
   SetVPKTags,
   GetMapName,
+  FetchWorkshopList,
+  FetchWorkshopDetail,
 } from '../wailsjs/go/main/App';
 
 import { EventsOn, OnFileDrop, BrowserOpenURL } from '../wailsjs/runtime/runtime';
@@ -4296,3 +4298,576 @@ closeTagModalBtns.forEach(id => {
         });
     }
 });
+
+
+/* -------------------------------------------------------------------------- */
+/* 创意工坊浏览器 (Workshop Browser) 逻辑                                        */
+/* -------------------------------------------------------------------------- */
+
+const browserState = {
+    page: 1,
+    query: "",
+    sort: "trend",
+    tags: [],
+    loading: false,
+    hasMore: true,
+    data: []
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 入口按钮
+    const openBrowserBtn = document.getElementById('open-browser-btn');
+    if (openBrowserBtn) {
+        openBrowserBtn.addEventListener('click', () => {
+            document.getElementById('workshop-modal').classList.add('hidden'); // 暂时隐藏现有弹窗
+            openBrowser();
+        });
+    }
+
+    // 关闭按钮
+    const closeBrowserBtn = document.getElementById('close-browser-modal-btn');
+    if (closeBrowserBtn) {
+        closeBrowserBtn.addEventListener('click', () => {
+            document.getElementById('browser-modal').classList.add('hidden');
+            // 如果是从下载弹窗来的，恢复下载弹窗？
+            // 或者就不恢复，反正用户关掉了。
+            document.getElementById('workshop-modal').classList.remove('hidden');
+        });
+    }
+
+    // 搜索
+    const searchInput = document.getElementById('browser-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                browserState.query = e.target.value.trim();
+                browserState.page = 1;
+                browserState.data = [];
+                loadWorkshopList();
+            }
+        });
+    }
+
+    // 排序筛选
+    document.querySelectorAll('#browser-sort-list .filter-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('#browser-sort-list .filter-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            browserState.sort = item.dataset.sort;
+            browserState.page = 1;
+            browserState.data = [];
+            loadWorkshopList();
+        });
+    });
+
+    // 初始化动态侧边栏
+    renderWorkshopSidebar();
+
+    // 加载更多
+    const loadMoreBtn = document.getElementById('browser-load-more');
+
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            browserState.page++;
+            loadWorkshopList();
+        });
+    }
+});
+
+function openBrowser() {
+    const modal = document.getElementById('browser-modal');
+    modal.classList.remove('hidden');
+    
+    // 如果是第一次打开且没数据，加载
+    if (browserState.data.length === 0) {
+        loadWorkshopList();
+    }
+}
+
+async function loadWorkshopList() {
+    if (browserState.loading && browserState.page > 1) return; // 第一页允许重刷
+    
+    // 隐藏详情页
+    const detailView = document.getElementById('browser-detail-view');
+    if (detailView) detailView.classList.add('hidden');
+
+    const grid = document.getElementById('browser-grid');
+    const loadingEl = document.getElementById('browser-loading');
+    const loadMoreBtn = document.getElementById('browser-load-more');
+    
+    browserState.loading = true;
+    loadingEl.classList.remove('hidden');
+    loadMoreBtn.classList.add('hidden');
+    
+    if (browserState.page === 1) {
+        grid.innerHTML = '';
+        browserState.hasMore = true;
+    } else {
+        // 如果是加载更多，先移除可能存在的错误提示
+        const errorEl = grid.querySelector('.error-state');
+        if (errorEl) errorEl.remove();
+        
+        // 移除"未找到结果"提示
+        const emptyEl = grid.querySelector('.empty-state');
+        if (emptyEl) emptyEl.remove();
+    }
+
+    try {
+        // 调用 Go 后端
+        const opts = {
+            page: browserState.page,
+            search_text: browserState.query,
+            sort: browserState.sort,
+            tags: browserState.tags
+        };
+
+        const result = await FetchWorkshopList(opts);
+        
+        // 渲染
+        if (result.items && result.items.length > 0) {
+            renderWorkshopGrid(result.items);
+            browserState.data = browserState.data.concat(result.items);
+        } else {
+            browserState.hasMore = false;
+            if (browserState.page === 1) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-tertiary);">未找到相关结果</div>';
+            }
+        }
+        
+    } catch (err) {
+        console.error("Fetch failed", err);
+        grid.innerHTML = `<div class="error-state" style="grid-column: 1/-1; text-align: center; color: var(--danger);">加载失败: ${err}</div>`;
+    } finally {
+        browserState.loading = false;
+        loadingEl.classList.add('hidden');
+        if (browserState.hasMore) {
+            loadMoreBtn.classList.remove('hidden');
+        }
+    }
+}
+
+function renderWorkshopGrid(items) {
+    const grid = document.getElementById('browser-grid');
+    
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'workshop-card';
+        card.innerHTML = `
+            <div class="card-preview">
+                <img src="${item.preview_url || 'assets/images/no-preview.png'}" loading="lazy" alt="${item.title}">
+            </div>
+            <div class="card-info">
+                <div class="card-title">${item.title}</div>
+                <div class="card-meta">
+                    <span class="card-author">${item.creator}</span>
+                    <div class="card-stats">
+                        <span>👁️ ${formatNumber(item.views)}</span>
+                        <span>⭐ ${formatNumber(item.favorited)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        card.addEventListener('click', () => {
+            openWorkshopDetail(item);
+        });
+        
+        grid.appendChild(card);
+    });
+}
+
+function formatNumber(num) {
+    if (!num) return '0';
+    if (num > 10000) return (num / 10000).toFixed(1) + 'w';
+    if (num > 1000) return (num / 1000).toFixed(1) + 'k';
+    return num;
+}
+
+async function openWorkshopDetail(item) {
+    const detailView = document.getElementById('browser-detail-view');
+    detailView.classList.remove('hidden');
+    detailView.innerHTML = '<div class="loading-placeholder" style="margin: auto;">加载详情中...</div>';
+    
+    try {
+        // 请求详情
+        const detail = await FetchWorkshopDetail(item.publishedfileid);
+        
+        detailView.innerHTML = `
+            <div class="detail-container">
+                <div class="detail-header-action">
+                    <button class="btn btn-outline" id="back-to-list-btn">← 返回列表</button>
+                    <a href="javascript:void(0)" id="open-in-steam-browser" class="btn btn-outline">
+                        🔗 在浏览器打开
+                    </a>
+                </div>
+
+                <div class="detail-top-section">
+                    <div class="detail-preview-wrapper">
+                        <img src="${detail.preview_url}" class="detail-preview-img-large">
+                    </div>
+                    
+                    <div class="detail-info-wrapper">
+                         <h1 class="detail-title-large">${detail.title}</h1>
+                         
+                         <div class="detail-stats-bar">
+                             <div class="stat-item">
+                                <span class="stat-value">${formatNumber(detail.subscriptions)}</span>
+                                <span class="stat-label">订阅</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${formatNumber(detail.favorited)}</span>
+                                <span class="stat-label">收藏</span>
+                            </div>
+                             <div class="stat-item">
+                                <span class="stat-value">${formatSize(detail.file_size)}</span>
+                                <span class="stat-label">大小</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${new Date(detail.time_updated * 1000).toLocaleDateString()}</span>
+                                <span class="stat-label">更新</span>
+                            </div>
+                        </div>
+
+                         <div class="detail-tags-row">
+                            ${(detail.tags || []).map(t => `<span class="tag-badge">${t.tag}</span>`).join('')}
+                        </div>
+
+                         <div class="action-bar-large">
+                            <button class="btn btn-success btn-large" id="browser-download-btn" style="width: 100%;">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>下载并安装</span>
+                            </button>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="detail-description-box">
+                    <h3>MOD 介绍</h3>
+                    <div class="detail-description-text">${detail.description ? formatDescription(detail.description) : '暂无描述'}</div>
+                </div>
+            </div>
+        `;
+        
+        // 绑定事件
+        document.getElementById('back-to-list-btn').addEventListener('click', () => {
+             // 隐藏详情，因为我们现在是单页覆盖
+            detailView.classList.add('hidden');
+        });
+        
+        document.getElementById('browser-download-btn').addEventListener('click', () => {
+            startDownloadFromBrowser(detail.publishedfileid);
+        });
+
+        document.getElementById('open-in-steam-browser').addEventListener('click', () => {
+             BrowserOpenURL(`https://steamcommunity.com/sharedfiles/filedetails/?id=${detail.publishedfileid}`);
+        });
+        
+    } catch (err) {
+        detailView.innerHTML = `
+            <div class="loading-placeholder">
+                <p>加载详情失败: ${err}</p>
+                <button class="btn btn-primary" onclick="this.parentElement.parentElement.classList.add('hidden')">返回</button>
+            </div>`;
+    }
+}
+
+// Helper to format bbcode-like description roughly or just preserve whitespace
+function formatDescription(text) {
+    // 简单处理换行
+    return text.replace(/\n/g, '<br>');
+}
+
+
+function startDownloadFromBrowser(id) {
+    // 1. 关闭浏览弹窗
+    document.getElementById('browser-modal').classList.add('hidden');
+    
+    // 2. 显示下载弹窗
+    const workshopModal = document.getElementById('workshop-modal');
+    workshopModal.classList.remove('hidden');
+    
+    // 3. 填充 URL
+    const urlInput = document.getElementById('workshop-url');
+    urlInput.value = `https://steamcommunity.com/sharedfiles/filedetails/?id=${id}`;
+    
+    // 4. 触发解析
+    const checkBtn = document.getElementById('check-workshop-btn');
+    if(checkBtn) checkBtn.click();
+}
+
+function formatSize(bytes) {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    else return (bytes / 1073741824).toFixed(1) + ' GB';
+}
+
+/* -------------------------------------------------------------------------- */
+/* 创意工坊侧边栏数据与渲染                                                    */
+/* -------------------------------------------------------------------------- */
+
+const WORKSHOP_CATEGORIES = [
+    {
+        name: "幸存者 (Survivors)",
+        children: [
+            { name: "Bill", tag: "Bill" },
+            { name: "Francis", tag: "Francis" },
+            { name: "Louis", tag: "Louis" },
+            { name: "Zoey", tag: "Zoey" },
+            { name: "Coach", tag: "Coach" },
+            { name: "Ellis", tag: "Ellis" },
+            { name: "Nick", tag: "Nick" },
+            { name: "Rochelle", tag: "Rochelle" }
+        ]
+    },
+    {
+        name: "感染者 (Infected)",
+        children: [
+            { name: "特感 (Special Infected)", tag: "Special Infected" },
+            { name: "Tank", tag: "Tank" },
+            { name: "Witch", tag: "Witch" },
+            { name: "Hunter", tag: "Hunter" },
+            { name: "Smoker", tag: "Smoker" },
+            { name: "Boomer", tag: "Boomer" },
+            { name: "Charger", tag: "Charger" },
+            { name: "Jockey", tag: "Jockey" },
+            { name: "Spitter", tag: "Spitter" },
+            { name: "普通感染者", tag: "Common Infected" }
+        ]
+    },
+    {
+        name: "模式 & 战役",
+        children: [
+            { name: "战役 (Campaigns)", tag: "Campaigns" },
+            { name: "合作 (Co-op)", tag: "Co-op" },
+            { name: "生存 (Survival)", tag: "Survival" },
+            { name: "对抗 (Versus)", tag: "Versus" },
+            { name: "清道夫 (Scavenge)", tag: "Scavenge" },
+            { name: "写实 (Realism)", tag: "Realism" },
+            { name: "写实对抗", tag: "Realism Versus" },
+            { name: "突变 (Mutations)", tag: "Mutations" },
+            { name: "单人 (Single Player)", tag: "Single Player" }
+        ]
+    },
+    {
+        name: "武器 (Weapons)",
+        children: [
+            { name: "步枪 (Rifle)", tag: "Rifle" },
+            { name: "冲锋枪 (SMG)", tag: "SMG" },
+            { name: "散弹枪 (Shotgun)", tag: "Shotgun" },
+            { name: "狙击枪 (Sniper)", tag: "Sniper" },
+            { name: "手枪 (Pistol)", tag: "Pistol" },
+            { name: "近战 (Melee)", tag: "Melee" },
+            { name: "榴弹 (Grenade Launcher)", tag: "Grenade Launcher" },
+            { name: "M60", tag: "M60" },
+            { name: "投掷物 (Throwable)", tag: "Throwable" }
+        ]
+    },
+    {
+        name: "物品 (Items)",
+        children: [
+            { name: "治疗包 (Medkit)", tag: "Medkit" },
+            { name: "电击器 (Defibrillator)", tag: "Defibrillator" },
+            { name: "肾上腺素 (Adrenaline)", tag: "Adrenaline" },
+            { name: "止痛药 (Pills)", tag: "Pills" }
+        ]
+    },
+    {
+        name: "其他资源",
+        children: [
+            { name: "UI", tag: "UI" },
+            { name: "音效 (Sounds)", tag: "Sounds" },
+            { name: "脚本 (Scripts)", tag: "Scripts" },
+            { name: "模型 (Models)", tag: "Models" },
+            { name: "纹理 (Textures)", tag: "Textures" },
+            { name: "杂项 (Miscellaneous)", tag: "Miscellaneous" },
+            { name: "其他 (Other)", tag: "Other" }
+        ]
+    }
+];
+
+function renderWorkshopSidebar() {
+    const container = document.getElementById('browser-sidebar-content');
+    if (!container) return;
+
+    container.innerHTML = '';
+    
+    // 渲染 Categories
+    WORKSHOP_CATEGORIES.forEach(cat => {
+        const group = document.createElement('div');
+        group.className = 'filter-group';
+        
+        // 分组标题
+        if (cat.name !== "全部") {
+             const title = document.createElement('h4');
+             title.textContent = cat.name;
+             group.appendChild(title);
+        }
+
+        const list = document.createElement('ul');
+        list.className = 'filter-list';
+
+        // 也是一种扁平化处理，如果 cat 本身有 tag，那它就是一个项
+        if (cat.tag !== undefined) {
+             renderFilterItem(list, cat.name, cat.tag, cat.searchText, true);
+        }
+
+        // 如果有 children
+        if (cat.children) {
+            cat.children.forEach(child => {
+                renderFilterItem(list, child.name, child.tag, child.searchText);
+            });
+        }
+        
+        group.appendChild(list);
+        container.appendChild(group);
+    });
+}
+
+function renderFilterItem(parentList, name, tag, searchText, isDefault = false) {
+    const li = document.createElement('li');
+    li.className = 'filter-item';
+    
+    // Check active state
+    // Update active based on whether the PRIMARY tag matches
+    const currentTag = browserState.tags[0] || '';
+    
+    // If searchText is used logic needs to be careful, but here we prioritize Tag matching significantly
+    if (tag === currentTag) {
+        li.classList.add('active');
+    }
+    
+    // Store data
+    li.dataset.tag = tag;
+    li.textContent = name;
+    
+    li.addEventListener('click', () => {
+        // Clear all active
+        document.querySelectorAll('#browser-sidebar-content .filter-item').forEach(i => i.classList.remove('active'));
+        li.classList.add('active');
+        
+        // Update State
+        // Simplify: Just send specific tag. Avoid strict AND logic failure.
+        let tagsToSend = [];
+        if (tag) {
+            tagsToSend.push(tag);
+        }
+        
+        browserState.tags = tagsToSend;
+        
+        // Handle Search Text Override
+        if (searchText) {
+            browserState.query = searchText;
+            const input = document.getElementById('browser-search-input');
+            if(input) input.value = searchText;
+        } else {
+            // Clear regular search unless user typed it?
+            // If we click a category, usually we want to see ALL of that category.
+            // But if user typed "skins" and clicked "Coach", maybe they want "Coach Skins"?
+            // Current behavior: Reset query to avoid confusion (like "AK47" query stuck on "Coach" tag)
+             browserState.query = '';
+             const input = document.getElementById('browser-search-input');
+             if(input) input.value = '';
+        }
+        
+        browserState.page = 1;
+        browserState.data = [];
+        
+        loadWorkshopList();
+    });
+    
+    parentList.appendChild(li);
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const browseBtn = document.getElementById('browse-workshop-btn');
+    if (browseBtn) {
+        browseBtn.addEventListener('click', () => {
+             const m = document.getElementById('browser-modal');
+             if (m) {
+                 m.classList.remove('hidden');
+                 renderWorkshopSidebar();
+                 // Load if empty
+                 if (browserState.data.length === 0) {
+                    loadWorkshopList();
+                 }
+             }
+        });
+    }
+    
+    // Wire up search in browser
+    const browserSearch = document.getElementById('browser-search-input');
+    const browserSearchBtn = document.getElementById('browser-search-btn');
+    const browserResetBtn = document.getElementById('browser-reset-btn');
+
+    const performBrowserSearch = () => {
+        if (browserSearch) {
+             browserState.query = browserSearch.value.trim();
+        }
+        browserState.page = 1;
+        browserState.data = [];
+        loadWorkshopList();
+    };
+
+    if (browserSearch) {
+        let debounceTimer;
+        
+        // 回车搜索
+        browserSearch.addEventListener('keyup', (e) => {
+            if(e.key === 'Enter') {
+                clearTimeout(debounceTimer);
+                performBrowserSearch();
+            }
+        });
+
+        // 输入延迟搜索
+        browserSearch.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                performBrowserSearch();
+            }, 800);
+        });
+    }
+
+    // 查询按钮
+    if (browserSearchBtn) {
+        browserSearchBtn.addEventListener('click', () => {
+             performBrowserSearch();
+        });
+    }
+
+    // 重置按钮
+    if (browserResetBtn) {
+        browserResetBtn.addEventListener('click', () => {
+             // 清空搜索框
+             if (browserSearch) browserSearch.value = '';
+             
+             // 清空状态
+             browserState.query = '';
+             browserState.tags = [];
+             browserState.page = 1;
+             browserState.data = [];
+
+             // 清空侧边栏选中
+             document.querySelectorAll('#browser-sidebar-content .filter-item').forEach(i => i.classList.remove('active'));
+
+             loadWorkshopList();
+        });
+    }
+    
+    // Close button for browser modal
+    const closeBrowserBtn = document.getElementById('close-browser-modal-btn');
+    if (closeBrowserBtn) {
+        closeBrowserBtn.addEventListener('click', () => {
+             document.getElementById('browser-modal').classList.add('hidden');
+        });
+    }
+});
+

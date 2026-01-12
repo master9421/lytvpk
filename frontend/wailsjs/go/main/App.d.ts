@@ -37,6 +37,10 @@ export function FetchPlayerList(arg1:string):Promise<Array<main.PlayerInfo>>;
 
 export function FetchServerInfo(arg1:string):Promise<main.ServerInfo>;
 
+export function FetchWorkshopDetail(arg1:string):Promise<main.WorkshopItemDetail>;
+
+export function FetchWorkshopList(arg1:main.WorkshopQueryOptions):Promise<main.WorkshopListResult>;
+
 export function ForceExit():Promise<void>;
 
 export function GetDownloadTasks():Promise<Array<main.DownloadTask>>;

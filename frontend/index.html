@@ -382,7 +382,12 @@
               <label for="workshop-url" class="input-label">创意工坊链接</label>
               <div class="url-input-container">
                 <input type="text" id="workshop-url" placeholder="粘贴 Steam 创意工坊链接..." />
-                <button id="check-workshop-btn" class="btn btn-primary">解析</button>
+                <button id="check-workshop-btn" class="btn btn-primary">
+                    <span class="icon">🔍</span> 解析
+                </button>
+                <button id="open-browser-btn" class="btn btn-primary" title="浏览工坊">
+                    <span class="icon">⚙️</span> 工坊
+                </button> 
               </div>
             </div>
 
@@ -390,8 +395,17 @@
               <label for="download-url" class="input-label">下载链接</label>
               <div class="url-input-container">
                 <input type="text" id="download-url" placeholder="解析后自动填充，或手动输入直链..." />
-                <button id="copy-url-btn" class="btn btn-secondary">复制</button>
-                <button id="download-workshop-btn" class="btn btn-success">下载</button>
+                <button id="copy-url-btn" class="btn btn-secondary">
+                    <span class="icon">📋</span> 复制
+                </button>
+                <button id="download-workshop-btn" class="btn btn-success">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>下载</span>
+                </button>
               </div>
               <div id="optimized-ip-container" class="hidden mt-12">
                 <label class="toggle-switch">
@@ -697,5 +711,55 @@
         </div>
       </div>
     <script src="./src/main.js?v=1.6" type="module"></script>
+      <!-- 创意工坊浏览弹窗 -->
+      <div id="browser-modal" class="modal hidden" style="z-index: 2000;">
+        <div class="modal-content browser-modal-content">
+          <div class="browser-header">
+            <h3>求生之路2 创意工坊</h3>
+            <button id="close-browser-modal-btn" class="close-btn">&times;</button>
+          </div>
+          <div class="browser-body">
+            <aside class="browser-sidebar">
+                <div class="filter-group">
+                    <h4>排序</h4>
+                    <ul class="filter-list" id="browser-sort-list">
+                        <li class="filter-item active" data-sort="trend">热门 (Trend)</li>
+                        <li class="filter-item" data-sort="recent">最新 (Recent)</li>
+                        <li class="filter-item" data-sort="top">评分最高 (Top Rated)</li>
+                    </ul>
+                </div>
+                <!-- 动态生成的分类 -->
+                <div id="browser-sidebar-content"></div>
+            </aside>
+            <div class="browser-content" style="position: relative;">
+                <div class="browser-toolbar">
+                    <div class="search-input-wrapper" style="flex: 1;">
+                        <span class="search-icon-inside">🔍</span>
+                        <input type="text" id="browser-search-input" class="form-input" placeholder="搜索 Mod...">
+                    </div>
+                    <button id="browser-search-btn" class="btn btn-primary">
+                        <span class="icon">🔍</span> 查询
+                    </button>
+                    <button id="browser-reset-btn" class="btn btn-outline">
+                        <span class="icon">↺</span> 重置
+                    </button>
+                </div>
+                <div class="browser-grid-container" id="browser-scroll-container">
+                    <div id="browser-grid" class="workshop-grid">
+                        <!-- Items rendered here -->
+                    </div>
+                    <div id="browser-loading" class="loading-placeholder hidden">加载中...</div>
+                    <button id="browser-load-more" class="btn btn-outline load-more-btn hidden">加载更多</button>
+                </div>
+
+                <!-- 详情页覆盖层 (默认隐藏) -->
+                <div id="browser-detail-view" class="workshop-detail-view hidden" style="background: var(--bg-app); position: absolute; inset: 0; z-index: 10;">
+                   <!-- Rendered by JS -->
+                   <div class="loading-placeholder" style="margin: auto;">加载详情中...</div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
   </body>
 </html>

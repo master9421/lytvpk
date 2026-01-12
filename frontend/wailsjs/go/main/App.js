@@ -70,6 +70,14 @@ export function FetchServerInfo(arg1) {
   return window['go']['main']['App']['FetchServerInfo'](arg1);
 }
 
+export function FetchWorkshopDetail(arg1) {
+  return window['go']['main']['App']['FetchWorkshopDetail'](arg1);
+}
+
+export function FetchWorkshopList(arg1) {
+  return window['go']['main']['App']['FetchWorkshopList'](arg1);
+}
+
 export function ForceExit() {
   return window['go']['main']['App']['ForceExit']();
 }
