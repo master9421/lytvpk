@@ -5000,10 +5000,11 @@ function renderThumbnails(detail) {
         ${images
           .map(
             (img, index) => `
-            <div class="thumbnail-item ${
+            <div class="thumbnail-item skeleton-anim ${
               index === 0 ? "active" : ""
             }" onclick="window.switchPreview('${img}', this)">
-                <img src="${img}" loading="lazy">
+                <img src="${img}" loading="lazy" style="opacity: 0; transition: opacity 0.3s;"
+                onload="this.style.opacity='1'; this.parentElement.classList.remove('skeleton-anim')">
             </div>
         `
           )
@@ -5034,13 +5035,23 @@ async function openWorkshopDetail(item) {
                 <div class="detail-scroll-content">
                 <div class="detail-top-section">
                     <div class="detail-preview-wrapper">
-                        <div class="main-preview-container">
+                        <div class="main-preview-container skeleton-anim">
+                             <div class="skeleton-image-placeholder">
+                                 <svg class="icon-svg" style="width: 48px; height: 48px; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                     <polyline points="21 15 16 10 5 21"></polyline>
+                                 </svg>
+                             </div>
                              <img src="${
                                detail.previews && detail.previews.length > 0
                                  ? detail.previews[0].preview_url ||
                                    detail.previews[0]
                                  : detail.preview_url
-                             }" class="detail-preview-img-large" id="main-preview-img" onclick="window.openFullImage(this.src)">
+                             }" class="detail-preview-img-large" id="main-preview-img" 
+                             style="opacity: 0; transition: opacity 0.3s; position: relative; z-index: 2;"
+                             onclick="window.openFullImage(this.src)"
+                             onload="this.style.opacity='1'; this.parentElement.classList.remove('skeleton-anim'); this.previousElementSibling.style.display='none';">
                         </div>
                         ${renderThumbnails(detail)}
                     </div>

@@ -3822,7 +3822,7 @@ body {
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-default);
+  border: none;
 }
 
 .detail-stats-bar {
@@ -3897,7 +3897,84 @@ body {
   padding: 24px;
   border-radius: 8px;
   border: 1px solid var(--border-default);
-  flex-grow: 1;
+}
+
+/* Skeleton Loading Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-anim {
+  background: var(--gray-100); /* Fallback */
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    var(--bg-app) 50%,
+    var(--gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite linear;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Specific style for the image skeleton to center content (icon) */
+.skeleton-image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  z-index: 1;
+}
+
+.main-preview-container {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--gray-100);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  position: relative; /* Ensure absolute children are positioned relative to this */
+}
+
+/* Ensure skeleton animation overrides background when active */
+.main-preview-container.skeleton-anim {
+  background: var(--gray-100);
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    var(--bg-app) 50%,
+    var(--gray-100) 75%
+  );
+  background-size: 200% 100%;
+}
+
+.thumbnail-item {
+  background: var(--gray-100);
+}
+
+.thumbnail-item.skeleton-anim {
+  background: var(--gray-100);
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    var(--bg-app) 50%,
+    var(--gray-100) 75%
+  );
+  background-size: 200% 100%;
 }
 
 .detail-description-box h3 {
