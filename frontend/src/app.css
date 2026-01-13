@@ -3605,6 +3605,7 @@ body {
   margin-bottom: 6px;
   line-height: 1.4;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -3773,18 +3774,26 @@ body {
 
 /* Workshop Browser Detail View - New Layout */
 .detail-container {
-  padding: 24px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   background-color: var(--bg-surface);
+  overflow: hidden;
 }
 
 .detail-header-action {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 24px;
+  padding: 24px 24px 12px 24px;
+  flex-shrink: 0;
+  z-index: 10;
+  background-color: var(--bg-surface);
+}
+
+.detail-scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px 24px;
 }
 
 .detail-top-section {

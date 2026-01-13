@@ -5031,6 +5031,7 @@ async function openWorkshopDetail(item) {
                     </a>
                 </div>
 
+                <div class="detail-scroll-content">
                 <div class="detail-top-section">
                     <div class="detail-preview-wrapper">
                         <div class="main-preview-container">
@@ -5102,6 +5103,7 @@ async function openWorkshopDetail(item) {
                         ? formatDescription(detail.description)
                         : "暂无描述"
                     }</div>
+                </div>
                 </div>
             </div>
         `;
