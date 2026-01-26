@@ -292,6 +292,13 @@ func (a *App) StartDownloadTask(details WorkshopFileDetails, useOptimizedIP bool
 	// Clean filename
 	filename := cleanFilename(details.Filename)
 
+	// If it's a workshop download (not direct), append the ID to the filename
+	if !strings.HasPrefix(details.PublishedFileId, "direct-") {
+		ext := filepath.Ext(filename)
+		nameWithoutExt := strings.TrimSuffix(filename, ext)
+		filename = fmt.Sprintf("%s_%s%s", nameWithoutExt, details.PublishedFileId, ext)
+	}
+
 	// If it's a direct download, use the cleaned filename as title
 	title := details.Title
 	if strings.HasPrefix(details.PublishedFileId, "direct-") {
@@ -496,6 +503,13 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, downl
 				// Clean filename
 				filename = cleanFilename(filename)
 
+				// If it's a workshop download (not direct), append the ID to the filename
+				if !strings.HasPrefix(task.WorkshopID, "direct-") {
+					ext := filepath.Ext(filename)
+					nameWithoutExt := strings.TrimSuffix(filename, ext)
+					filename = fmt.Sprintf("%s_%s%s", nameWithoutExt, task.WorkshopID, ext)
+				}
+
 				// Update task filename if it was unknown or we want to prefer server filename
 				// For now, let's update it if the current one is "unknown.vpk" or similar
 				// Or if we are in direct download mode
@@ -566,6 +580,23 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, downl
 	}
 
 	out.Close() // Close before rename
+
+	// For direct downloads, ALWAYS append timestamp to ensure uniqueness
+	if strings.HasPrefix(task.WorkshopID, "direct-") {
+		// Append timestamp with ms
+		ext := filepath.Ext(task.Filename)
+		nameWithoutExt := strings.TrimSuffix(task.Filename, ext)
+		ms := time.Now().UnixNano() / int64(time.Millisecond)
+		newFilename := fmt.Sprintf("%s_%d%s", nameWithoutExt, ms, ext)
+
+		taskManager.mu.Lock()
+		task.Filename = newFilename
+		task.Title = newFilename // Also update title for direct
+		taskManager.mu.Unlock()
+
+		targetPath = filepath.Join(a.rootDir, newFilename)
+		runtime.EventsEmit(a.ctx, "task_updated", task)
+	}
 
 	// Rename to final
 	if err := os.Rename(tempPath, targetPath); err != nil {
