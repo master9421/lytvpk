@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -187,6 +187,85 @@
             </div>
             <div id="tag-filters" class="tag-filters">
               <!-- 动态生成标签筛选按钮 -->
+            </div>
+            <div class="sort-container" style="margin-left: auto">
+              <div class="batch-actions-dropdown-container">
+                <button
+                  id="sort-btn"
+                  class="btn btn-small btn-outline"
+                  title="排序方式"
+                >
+                  <span class="icon">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon-svg"
+                    >
+                      <path d="M11 5h10" />
+                      <path d="M11 9h7" />
+                      <path d="M11 13h4" />
+                      <path d="M3 17l3 3 3-3" />
+                      <path d="M6 18V4" />
+                    </svg>
+                  </span>
+                  <span id="sort-btn-text">文件名排序</span>
+                </button>
+                <div
+                  id="sort-dropdown-content"
+                  class="dropdown-content hidden sort-dropdown-content"
+                >
+                  <button id="sort-name-btn" class="dropdown-item active">
+                    <span class="btn-icon">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" x2="8" y1="13" y2="13" />
+                        <line x1="16" x2="8" y1="17" y2="17" />
+                        <line x1="10" x2="8" y1="9" y2="9" />
+                      </svg>
+                    </span>
+                    文件名排序
+                  </button>
+                  <button id="sort-date-btn" class="dropdown-item">
+                    <span class="btn-icon">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </span>
+                    更新时间排序
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1112,8 +1191,8 @@
     </div>
     <!-- Image Preview Modal -->
     <div id="image-preview-modal" class="image-modal">
-        <span class="image-modal-close">&times;</span>
-        <img class="image-modal-content" id="full-image">
+      <span class="image-modal-close">&times;</span>
+      <img class="image-modal-content" id="full-image" />
     </div>
   </body>
 </html>

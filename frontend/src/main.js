@@ -94,6 +94,8 @@ let appState = {
   currentDirectory: "",
   isLoading: false, // 是否正在加载中
   showHidden: false, // 是否显示隐藏文件
+  sortType: "name", // 'name' | 'date'
+  sortOrder: "asc", // 'asc' | 'desc'
 };
 
 // 初始化应用
@@ -197,7 +199,135 @@ function setupEventListeners() {
     });
   }
 
+  // 排序功能
+  setupSortEvents();
+
   // 批量操作按钮
+  setupBatchActionEvents();
+}
+
+// 设置排序事件
+function setupSortEvents() {
+  const sortBtn = document.getElementById("sort-btn");
+  const dropdown = document.getElementById("sort-dropdown-content");
+
+  if (sortBtn && dropdown) {
+    // 切换下拉菜单
+    sortBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle("hidden");
+    });
+
+    // 点击外部关闭
+    document.addEventListener("click", (e) => {
+      if (!sortBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
+  }
+
+  // 排序选项点击
+  document
+    .getElementById("sort-name-btn")
+    ?.addEventListener("click", () => handleSortChange("name"));
+  document
+    .getElementById("sort-date-btn")
+    ?.addEventListener("click", () => handleSortChange("date"));
+
+  // 初始化 UI
+  updateSortButtonUI();
+}
+
+// 处理排序变更
+function handleSortChange(type) {
+  if (appState.sortType === type) {
+    // 同类型切换顺序
+    appState.sortOrder = appState.sortOrder === "asc" ? "desc" : "asc";
+  } else {
+    // 切换类型，默认顺序
+    appState.sortType = type;
+    appState.sortOrder = type === "date" ? "desc" : "asc"; // 日期默认倒序（最新在前），文件名默认正序
+  }
+
+  // saveSortConfig();
+  updateSortButtonUI();
+
+  // 关闭下拉菜单
+  document.getElementById("sort-dropdown-content")?.classList.add("hidden");
+
+  // 重新排序并渲染，不需要重新搜索
+  applySort(appState.vpkFiles);
+  renderFileList();
+}
+
+// 更新排序按钮 UI
+function updateSortButtonUI() {
+  const btnText = document.getElementById("sort-btn-text");
+  const nameBtn = document.getElementById("sort-name-btn");
+  const dateBtn = document.getElementById("sort-date-btn");
+
+  // 更新按钮文本
+  let text = "文件名排序";
+  let arrow = "";
+
+  if (appState.sortType === "name") {
+    text = "文件名排序";
+    arrow = appState.sortOrder === "asc" ? "(A-Z)" : "(Z-A)";
+  } else if (appState.sortType === "date") {
+    text = "更新时间排序";
+    arrow = appState.sortOrder === "desc" ? "(最新)" : "(最旧)";
+  }
+
+  if (btnText) btnText.textContent = `${text} ${arrow}`;
+
+  // 更新选中状态
+  if (nameBtn) {
+    nameBtn.classList.toggle("active", appState.sortType === "name");
+  }
+
+  if (dateBtn) {
+    dateBtn.classList.toggle("active", appState.sortType === "date");
+  }
+}
+
+// 应用排序
+function applySort(files) {
+  return files.sort((a, b) => {
+    let result = 0;
+
+    if (appState.sortType === "date") {
+      const dateA = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+      const dateB = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+      result = dateA - dateB;
+    } else {
+      // 默认文件名排序
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+
+      result = nameA.localeCompare(nameB, "zh-CN", {
+        numeric: true,
+        sensitivity: "accent",
+      });
+    }
+
+    // 如果是倒序
+    if (appState.sortOrder === "desc") {
+      result = -result;
+    }
+
+    // 稳定性回退
+    if (result === 0) {
+      if (appState.sortType === "date") {
+        return a.name.localeCompare(b.name, "zh-CN", { numeric: true });
+      }
+      return a.path.localeCompare(b.path);
+    }
+
+    return result;
+  });
+}
+
+function setupBatchActionEvents() {
   document
     .getElementById("select-all-btn")
     .addEventListener("click", selectAll);
@@ -1049,7 +1179,7 @@ async function loadFiles() {
     ]);
 
     // 确保文件列表按名称排序，保持稳定顺序
-    sortFilesByName(files);
+    applySort(files);
 
     // 保存完整的文件列表和当前显示的列表
     appState.allVpkFiles = files;
@@ -1120,7 +1250,7 @@ async function refreshFilesKeepFilter() {
     ]);
 
     // 确保文件列表按名称排序，保持稳定顺序
-    sortFilesByName(files);
+    applySort(files);
 
     // 更新状态
     appState.allVpkFiles = files;
@@ -1542,6 +1672,12 @@ async function resetFilters() {
     // 清空二级标签显示
     await renderSecondaryTags("");
 
+    // 重置排序状态
+    appState.sortType = "name";
+    appState.sortOrder = "asc";
+    // saveSortConfig();
+    updateSortButtonUI();
+
     // 重新执行搜索
     await performSearch();
   } finally {
@@ -1602,7 +1738,7 @@ async function performSearch() {
     }
 
     // 确保结果按名称排序，保持稳定顺序
-    sortFilesByName(appState.vpkFiles);
+    applySort(appState.vpkFiles);
 
     renderFileList();
     updateStatusBar();
@@ -1654,11 +1790,11 @@ function createFileItem(file) {
         </div>
         <div class="file-size">${formatFileSize(file.size)}</div>
         <div class="file-status">${statusIcon} ${
-    file.enabled ? "启用" : "禁用"
-  }</div>
+          file.enabled ? "启用" : "禁用"
+        }</div>
         <div class="file-location">${locationIcon} ${getLocationDisplayName(
-    file.location
-  )}</div>
+          file.location
+        )}</div>
         <div class="file-tags">${formatTags(
           file.primaryTag,
           file.secondaryTags
@@ -2126,18 +2262,14 @@ function updateStatusBar() {
   const disabledFiles = totalFiles - enabledFiles;
   const selectedCount = appState.selectedFiles.size;
 
-  document.getElementById(
-    "total-files"
-  ).textContent = `总文件数: ${totalFiles}`;
-  document.getElementById(
-    "enabled-files"
-  ).textContent = `已启用: ${enabledFiles}`;
-  document.getElementById(
-    "disabled-files"
-  ).textContent = `已禁用: ${disabledFiles}`;
-  document.getElementById(
-    "selected-files"
-  ).textContent = `已选择: ${selectedCount}`;
+  document.getElementById("total-files").textContent =
+    `总文件数: ${totalFiles}`;
+  document.getElementById("enabled-files").textContent =
+    `已启用: ${enabledFiles}`;
+  document.getElementById("disabled-files").textContent =
+    `已禁用: ${disabledFiles}`;
+  document.getElementById("selected-files").textContent =
+    `已选择: ${selectedCount}`;
 }
 
 // 显示文件详情
@@ -2480,23 +2612,6 @@ window.openFileLocation = async function (filePath) {
 // 5. 自动保存和恢复筛选状态（搜索词、标签筛选、状态筛选）
 // 6. 确保文件列表按名称稳定排序，避免乱序跳动
 // 7. 保持选中状态和UI一致性// 统一的文件排序函数
-function sortFilesByName(files) {
-  return files.sort((a, b) => {
-    // 使用更稳定的排序算法
-    const nameA = a.name.toLowerCase();
-    const nameB = b.name.toLowerCase();
-
-    // 先按名称排序，如果名称相同则按路径排序确保稳定性
-    if (nameA === nameB) {
-      return a.path.localeCompare(b.path);
-    }
-
-    return nameA.localeCompare(nameB, "zh-CN", {
-      numeric: true,
-      sensitivity: "accent",
-    });
-  });
-}
 
 // 批量更新文件状态（保持列表顺序和筛选状态）
 async function batchUpdateFileStatus(filePaths) {
@@ -3134,15 +3249,15 @@ function createTaskElement(task) {
         <div class="progress-fill" style="width: ${
           task.progress
         }%; height: 100%; background-color: ${
-    statusColors[task.status] || "#ccc"
-  }; transition: width 0.3s;"></div>
+          statusColors[task.status] || "#ccc"
+        }; transition: width 0.3s;"></div>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 2px;">
         <span class="task-size">${formatBytes(
           task.downloaded_size
         )} / ${formatBytes(task.total_size)} ${
-    task.speed ? `(${task.speed})` : ""
-  }</span>
+          task.speed ? `(${task.speed})` : ""
+        }</span>
         <span class="task-percent">${task.progress}%</span>
       </div>
       ${

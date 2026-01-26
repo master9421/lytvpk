@@ -471,21 +471,21 @@ func (a *App) SearchVPKFiles(query string, primaryTag string, secondaryTags []st
 		textMatch := query == ""
 		if query != "" {
 			// 匹配标题
-			if strings.Contains(strings.ToLower(vpkFile.Title), query) {
+			if fuzzyMatch(query, strings.ToLower(vpkFile.Title)) {
 				textMatch = true
 			}
 			// 匹配文件名
-			if !textMatch && strings.Contains(strings.ToLower(vpkFile.Name), query) {
+			if !textMatch && fuzzyMatch(query, strings.ToLower(vpkFile.Name)) {
 				textMatch = true
 			}
 			// 匹配主标签
-			if !textMatch && strings.Contains(strings.ToLower(vpkFile.PrimaryTag), query) {
+			if !textMatch && fuzzyMatch(query, strings.ToLower(vpkFile.PrimaryTag)) {
 				textMatch = true
 			}
 			// 匹配二级标签
 			if !textMatch {
 				for _, tag := range vpkFile.SecondaryTags {
-					if strings.Contains(strings.ToLower(tag), query) {
+					if fuzzyMatch(query, strings.ToLower(tag)) {
 						textMatch = true
 						break
 					}
@@ -1591,6 +1591,25 @@ func (a *App) ToggleVPKVisibility(filePath string) (string, error) {
 	}
 
 	return newPath, nil
+}
+
+// fuzzyMatch 判断 source 是否是 target 的模糊匹配（子序列匹配）
+func fuzzyMatch(source, target string) bool {
+	// 转换为 rune 数组以支持 Unicode
+	srcRunes := []rune(source)
+	tgtRunes := []rune(target)
+
+	sIdx := 0
+	tIdx := 0
+
+	for sIdx < len(srcRunes) && tIdx < len(tgtRunes) {
+		if srcRunes[sIdx] == tgtRunes[tIdx] {
+			sIdx++
+		}
+		tIdx++
+	}
+
+	return sIdx == len(srcRunes)
 }
 
 // ExportVPKFilesToZip 批量导出VPK文件为ZIP
