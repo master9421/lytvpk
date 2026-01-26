@@ -40,23 +40,24 @@ var officialTags = map[string]bool{
 }
 
 // SetModRotation 设置Mod随机轮换功能是否开启
-func (a *App) SetModRotation(enabled bool) {
+func (a *App) SetModRotation(config RotationConfig) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.modRotationEnabled = enabled
+	a.modRotationConfig = config
 }
 
 // GetModRotation 获取Mod随机轮换功能状态
-func (a *App) GetModRotation() bool {
+func (a *App) GetModRotation() RotationConfig {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	return a.modRotationEnabled
+	return a.modRotationConfig
 }
 
 // RotateMods 执行Mod随机轮换逻辑
 func (a *App) RotateMods() error {
 	a.mu.Lock()
-	if !a.modRotationEnabled {
+	config := a.modRotationConfig
+	if !config.EnableCharacters && !config.EnableWeapons {
 		a.mu.Unlock()
 		return nil
 	}
@@ -80,6 +81,14 @@ func (a *App) RotateMods() error {
 		if file.Enabled {
 			enabledMods[file.Path] = file
 			if file.PrimaryTag == "武器" || file.PrimaryTag == "人物" {
+				// 根据配置过滤
+				if file.PrimaryTag == "人物" && !config.EnableCharacters {
+					continue
+				}
+				if file.PrimaryTag == "武器" && !config.EnableWeapons {
+					continue
+				}
+
 				for _, tag := range file.SecondaryTags {
 					// 只收集官方标签，忽略自定义标签
 					if tag != "" && officialTags[tag] {
@@ -91,7 +100,7 @@ func (a *App) RotateMods() error {
 	}
 
 	if len(targetTags) == 0 {
-		logMsg("未发现启用的官方武器或人物Mod，跳过轮换")
+		logMsg("未发现启用的官方武器或人物Mod（符合当前配置），跳过轮换")
 		return nil
 	}
 

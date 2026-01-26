@@ -51,7 +51,7 @@ export function GetMapName(arg1:string):Promise<string>;
 
 export function GetMirrors():Promise<Array<string>>;
 
-export function GetModRotation():Promise<boolean>;
+export function GetModRotation():Promise<main.RotationConfig>;
 
 export function GetPrimaryTags():Promise<Array<string>>;
 
@@ -95,7 +95,7 @@ export function SelectDirectory():Promise<string>;
 
 export function SelectFiles():Promise<Array<string>>;
 
-export function SetModRotation(arg1:boolean):Promise<void>;
+export function SetModRotation(arg1:main.RotationConfig):Promise<void>;
 
 export function SetRootDirectory(arg1:string):Promise<void>;
 

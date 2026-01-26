@@ -977,6 +977,7 @@ body {
   align-items: center;
   cursor: pointer;
   gap: var(--spacing-2);
+  vertical-align: middle;
 }
 
 .toggle-switch input {
@@ -984,6 +985,7 @@ body {
   width: 0;
   height: 0;
   position: absolute;
+  z-index: -1;
 }
 
 .toggle-slider {
@@ -993,6 +995,7 @@ body {
   background-color: var(--gray-300);
   border-radius: 22px;
   transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0; /* 防止压缩 */
 }
 
 .toggle-slider:before {
@@ -1030,6 +1033,7 @@ body {
   font-weight: 500;
   -webkit-user-select: none;
   user-select: none;
+  white-space: nowrap; /* 防止换行 */
 }
 
 .toggle-switch:hover .toggle-slider {

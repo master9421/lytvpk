@@ -102,6 +102,20 @@ export namespace main {
 	        this.duration = source["duration"];
 	    }
 	}
+	export class RotationConfig {
+	    enableCharacters: boolean;
+	    enableWeapons: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RotationConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enableCharacters = source["enableCharacters"];
+	        this.enableWeapons = source["enableWeapons"];
+	    }
+	}
 	export class ServerInfo {
 	    name: string;
 	    map: string;

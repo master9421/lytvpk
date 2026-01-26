@@ -2649,31 +2649,54 @@ async function initModRotationState() {
 
   // 从配置恢复状态
   const config = getConfig();
-  const enabled = config.modRotationEnabled || false;
+  let rotationConfig = config.modRotationConfig;
+
+  // 兼容旧配置
+  if (!rotationConfig) {
+    const enabled = config.modRotationEnabled || false;
+    rotationConfig = {
+      enableCharacters: enabled,
+      enableWeapons: enabled,
+    };
+  }
 
   try {
     // 同步到后端
-    await window.go.main.App.SetModRotation(enabled);
+    await window.go.main.App.SetModRotation(rotationConfig);
 
     // 更新UI
-    updateModRotationUI(enabled);
+    updateModRotationUI(rotationConfig);
   } catch (e) {
     console.error("初始化Mod轮换状态失败:", e);
   }
 }
 
-function updateModRotationUI(enabled) {
+function updateModRotationUI(config) {
   const btn = document.getElementById("mod-rotation-btn");
   if (!btn) return;
 
-  if (enabled) {
+  const charEnabled = config.enableCharacters;
+  const weaponEnabled = config.enableWeapons;
+  const anyEnabled = charEnabled || weaponEnabled;
+
+  if (anyEnabled) {
     btn.classList.add("btn-rotation-enabled");
     btn.classList.remove("btn-outline");
-    btn.innerHTML = `<span class="icon">${ROTATION_ICON_SVG}</span> 轮换已启用`;
+
+    let text = "轮换已启用";
+    if (charEnabled && weaponEnabled) {
+      text = "轮换已启用";
+    } else if (charEnabled) {
+      text = "人物轮换已启用";
+    } else if (weaponEnabled) {
+      text = "武器轮换已启用";
+    }
+
+    btn.innerHTML = `<span class="icon">${ROTATION_ICON_SVG}</span> ${text}`;
   } else {
     btn.classList.remove("btn-rotation-enabled");
     btn.classList.add("btn-outline");
-    btn.innerHTML = `<span class="icon">${ROTATION_ICON_SVG}</span> 轮换已禁用`;
+    btn.innerHTML = `<span class="icon">${ROTATION_ICON_SVG}</span> 轮换已关闭`;
   }
 }
 
@@ -2684,56 +2707,77 @@ async function toggleModRotation() {
   }
 
   const config = getConfig();
-  const currentlyEnabled = config.modRotationEnabled || false;
-
-  if (currentlyEnabled) {
-    // 禁用操作
-    showConfirmModal(
-      "关闭Mod随机轮换",
-      "确定要关闭Mod随机轮换功能吗？\n\n关闭后，启动游戏将不再自动替换Mod。",
-      async () => {
-        try {
-          config.modRotationEnabled = false;
-          saveConfig(config);
-          await window.go.main.App.SetModRotation(false);
-          updateModRotationUI(false);
-          showNotification("Mod随机轮换已禁用", "info");
-        } catch (e) {
-          showError("操作失败: " + e);
-        }
-      }
-    );
-  } else {
-    // 启用操作
-    const description = `
-      <div class="rotation-desc-container">
-        <p>开启 <strong>Mod随机轮换</strong> 功能后，每次从Mod管理器中启动时系统将自动：</p>
-        <ul class="rotation-steps" style="text-align: left; padding-left: 20px; margin: 10px 0;">
-          <li><strong>识别分类：</strong>扫描已启用中存在的人物/武器分类。</li>
-          <li><strong>随机替换：</strong>从所有已安装Mod中随机选择同类替换。</li>
-          <li><strong>自动应用：</strong>保持其他Mod不变，仅轮换指定随机池。</li>
-        </ul>
-        <p class="rotation-note" style="margin-top: 10px; font-size: 0.9em; color: var(--text-tertiary);">这能让您每次游玩时都体验不同的Mod组合。</p>
-      </div>
-    `;
-
-    showConfirmModal(
-      "开启Mod随机轮换",
-      description,
-      async () => {
-        try {
-          config.modRotationEnabled = true;
-          saveConfig(config);
-          await window.go.main.App.SetModRotation(true);
-          updateModRotationUI(true);
-          showNotification("Mod随机轮换已启用", "success");
-        } catch (e) {
-          showError("操作失败: " + e);
-        }
-      },
-      true // useHtml
-    );
+  // 获取当前配置或默认配置
+  let currentConfig = config.modRotationConfig;
+  if (!currentConfig) {
+    const enabled = config.modRotationEnabled || false;
+    currentConfig = {
+      enableCharacters: enabled,
+      enableWeapons: enabled,
+    };
   }
+
+  const htmlContent = `
+    <div class="rotation-settings">
+      <p class="rotation-title">请选择要启用的轮换类型：</p>
+      <div class="rotation-options">
+        <label class="rotation-option-item">
+          <span class="option-label">人物轮换</span>
+          <div class="rotation-switch">
+            <input type="checkbox" id="rotation-char-check" ${currentConfig.enableCharacters ? "checked" : ""}>
+            <span class="rotation-slider round"></span>
+          </div>
+        </label>
+        <label class="rotation-option-item">
+          <span class="option-label">武器轮换</span>
+          <div class="rotation-switch">
+            <input type="checkbox" id="rotation-weapon-check" ${currentConfig.enableWeapons ? "checked" : ""}>
+            <span class="rotation-slider round"></span>
+          </div>
+        </label>
+      </div>
+      <div class="rotation-desc-container">
+        <p>开启后，每次启动游戏将自动从已安装的Mod中随机选择并替换。</p>
+        <p>系统会按具体子分类（如 AK47、M16、Nick 等）进行随机，确保每个子分类只有一个 Mod 生效。</p>
+        <p><strong>注意：仅当某个子分类至少有一个Mod处于启用状态时，该分类才会参与轮换。</strong></p>
+        <p>若都不选择，则相当于关闭轮换功能。</p>
+      </div>
+    </div>
+  `;
+
+  showConfirmModal(
+    "设置Mod随机轮换",
+    htmlContent,
+    async () => {
+      const charCheck = document.getElementById("rotation-char-check");
+      const weaponCheck = document.getElementById("rotation-weapon-check");
+
+      const newConfig = {
+        enableCharacters: charCheck ? charCheck.checked : false,
+        enableWeapons: weaponCheck ? weaponCheck.checked : false,
+      };
+
+      try {
+        config.modRotationConfig = newConfig;
+        // 同时更新旧字段以保持向后兼容（可选）
+        config.modRotationEnabled =
+          newConfig.enableCharacters || newConfig.enableWeapons;
+
+        saveConfig(config);
+        await window.go.main.App.SetModRotation(newConfig);
+        updateModRotationUI(newConfig);
+
+        if (newConfig.enableCharacters || newConfig.enableWeapons) {
+          showNotification("Mod随机轮换设置已更新", "success");
+        } else {
+          showNotification("Mod随机轮换已关闭", "info");
+        }
+      } catch (e) {
+        showError("操作失败: " + e);
+      }
+    },
+    true // useHtml
+  );
 }
 
 // LytVPK v2.8 - 启用/禁用逻辑重构版

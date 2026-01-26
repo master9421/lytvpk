@@ -80,7 +80,13 @@ type App struct {
 	restyClient   *resty.Client
 
 	// 配置项
-	modRotationEnabled bool
+	modRotationConfig RotationConfig
+}
+
+// RotationConfig Mod轮换配置
+type RotationConfig struct {
+	EnableCharacters bool `json:"enableCharacters"`
+	EnableWeapons    bool `json:"enableWeapons"`
 }
 
 // NewApp creates a new App application struct
