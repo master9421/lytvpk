@@ -345,11 +345,23 @@ func (a *App) GetVPKFiles() []VPKFile {
 
 	a.vpkCache.Range(func(key, value interface{}) bool {
 		cache := value.(*VPKFileCache)
-		result = append(result, cache.File)
+		file := cache.File
+		// 性能优化：列表请求不返回预览图数据，由前端按需加载
+		file.PreviewImage = ""
+		result = append(result, file)
 		return true
 	})
 
 	return result
+}
+
+// GetVPKPreviewImage 获取指定VPK文件的预览图（按需加载）
+func (a *App) GetVPKPreviewImage(filePath string) string {
+	if cached, ok := a.vpkCache.Load(filePath); ok {
+		cache := cached.(*VPKFileCache)
+		return cache.File.PreviewImage
+	}
+	return ""
 }
 
 // ToggleVPKFile 切换VPK文件的启用状态（智能缓存版本）
@@ -516,6 +528,8 @@ func (a *App) SearchVPKFiles(query string, primaryTag string, secondaryTags []st
 		}
 
 		if textMatch && primaryMatch && secondaryMatch {
+			// 性能优化：列表请求不返回预览图数据，由前端按需加载
+			vpkFile.PreviewImage = ""
 			result = append(result, vpkFile)
 		}
 

@@ -118,6 +118,10 @@ export function GetVPKFiles() {
   return window['go']['main']['App']['GetVPKFiles']();
 }
 
+export function GetVPKPreviewImage(arg1) {
+  return window['go']['main']['App']['GetVPKPreviewImage'](arg1);
+}
+
 export function GetWorkshopDetails(arg1) {
   return window['go']['main']['App']['GetWorkshopDetails'](arg1);
 }

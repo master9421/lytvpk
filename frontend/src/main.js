@@ -41,6 +41,7 @@ import {
   GetMapName,
   FetchWorkshopList,
   FetchWorkshopDetail,
+  GetVPKPreviewImage,
 } from "../wailsjs/go/main/App";
 
 import {
@@ -2340,13 +2341,30 @@ window.showFileDetail = function (filePath) {
   // 显示预览图
   const previewSection = document.getElementById("preview-section");
   const previewImage = document.getElementById("detail-preview-image");
+
+  // 异步加载预览图
+  previewSection.classList.remove("hidden");
+  previewImage.style.display = "none"; // 先隐藏，加载成功后再显示
+
+  // 先检查内存中是否已有（可能来自之前的详情缓存）
   if (file.previewImage) {
-    previewSection.classList.remove("hidden");
     previewImage.src = file.previewImage;
     previewImage.style.display = "block";
   } else {
-    previewSection.classList.add("hidden");
-    previewImage.style.display = "none";
+    // 调用后端按需加载
+    GetVPKPreviewImage(file.path)
+      .then((imgData) => {
+        if (imgData) {
+          previewImage.src = imgData;
+          previewImage.style.display = "block";
+        } else {
+          previewSection.classList.add("hidden");
+        }
+      })
+      .catch((err) => {
+        console.error("加载预览图失败:", err);
+        previewSection.classList.add("hidden");
+      });
   }
 
   // 填充标签

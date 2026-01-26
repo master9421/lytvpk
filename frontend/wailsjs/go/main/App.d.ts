@@ -61,6 +61,8 @@ export function GetSecondaryTags(arg1:string):Promise<Array<string>>;
 
 export function GetVPKFiles():Promise<Array<parser.VPKFile>>;
 
+export function GetVPKPreviewImage(arg1:string):Promise<string>;
+
 export function GetWorkshopDetails(arg1:string):Promise<Array<main.WorkshopFileDetails>>;
 
 export function HandleFileDrop(arg1:Array<string>):Promise<void>;
