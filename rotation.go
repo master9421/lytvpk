@@ -9,6 +9,36 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// 官方标签白名单（只允许这些标签参与随机轮换）
+var officialTags = map[string]bool{
+	// 幸存者
+	"Bill": true, "Francis": true, "Louis": true, "Zoey": true,
+	"Coach": true, "Ellis": true, "Nick": true, "Rochelle": true,
+
+	// 感染者 (虽然目前轮换逻辑只处理武器和人物，但保留这些标签作为参考)
+	"tank": true, "witch": true, "hunter": true, "smoker": true,
+	"boomer": true, "charger": true, "jockey": true, "spitter": true,
+	"common": true, "uncommon_infected": true,
+
+	// 武器 - 步枪
+	"AK47": true, "M16": true, "sg552": true, "三连发": true, "M60": true,
+	// 武器 - 冲锋枪
+	"乌兹": true, "消音": true, "MP5": true,
+	// 武器 - 狙击枪
+	"大狙": true, "军狙": true, "猎枪": true, "鸟狙": true,
+	// 武器 - 霰弹枪
+	"铁喷": true, "木喷": true, "一代连喷": true, "二代连喷": true,
+	// 武器 - 手枪
+	"马格南": true, "小手枪": true,
+	// 武器 - 其他
+	"榴弹": true,
+
+	// 近战武器
+	"砍刀": true, "武士刀": true, "棒球棍": true, "匕首": true, "电锯": true,
+	"撬棍": true, "消防斧": true, "平底锅": true, "吉他": true, "板球拍": true,
+	"警棍": true, "高尔夫球杆": true, "铁铲": true, "草叉": true,
+}
+
 // SetModRotation 设置Mod随机轮换功能是否开启
 func (a *App) SetModRotation(enabled bool) {
 	a.mu.Lock()
@@ -51,7 +81,8 @@ func (a *App) RotateMods() error {
 			enabledMods[file.Path] = file
 			if file.PrimaryTag == "武器" || file.PrimaryTag == "人物" {
 				for _, tag := range file.SecondaryTags {
-					if tag != "" {
+					// 只收集官方标签，忽略自定义标签
+					if tag != "" && officialTags[tag] {
 						targetTags[tag] = true
 					}
 				}
@@ -60,7 +91,7 @@ func (a *App) RotateMods() error {
 	}
 
 	if len(targetTags) == 0 {
-		logMsg("未发现启用的武器或人物Mod，跳过轮换")
+		logMsg("未发现启用的官方武器或人物Mod，跳过轮换")
 		return nil
 	}
 
