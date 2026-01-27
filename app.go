@@ -19,6 +19,7 @@ import (
 
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"net"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -78,9 +79,21 @@ type App struct {
 	goroutinePool *ants.Pool
 	forceClose    bool
 	restyClient   *resty.Client
+	proxyServer   *ImageProxyServer
 
 	// 配置项
-	modRotationConfig RotationConfig
+	modRotationConfig   RotationConfig
+	workshopPreferredIP bool
+	configPath          string
+}
+
+// ConfigFile 定义配置文件结构
+type ConfigFile struct {
+	ModRotationConfig   RotationConfig `json:"modRotationConfig"`
+	WorkshopPreferredIP bool           `json:"workshopPreferredIP"`
+	// 其他前端管理的配置项不需要在这里定义，因为前端自己管理 LocalStorage
+	// 但为了后端能持久化一些关键设置，我们需要这个文件
+	// 注意：目前前端主要用 LocalStorage，后端用这个文件主要为了启动时能获取状态
 }
 
 // RotationConfig Mod轮换配置
@@ -104,9 +117,70 @@ func NewApp() *App {
 	client := resty.New()
 	client.SetTimeout(2 * time.Second)
 
-	return &App{
+	// 启动本地图片代理
+	proxy := NewImageProxyServer(globalIPSelector)
+	proxy.Start()
+
+	// 确定配置文件路径
+	configDir, _ := os.UserConfigDir()
+	appConfigDir := filepath.Join(configDir, "LytVPK")
+	os.MkdirAll(appConfigDir, 0755)
+	configPath := filepath.Join(appConfigDir, "config.json")
+
+	app := &App{
 		goroutinePool: pool,
 		restyClient:   client,
+		proxyServer:   proxy,
+		configPath:    configPath,
+	}
+
+	// 加载配置
+	app.loadConfig()
+
+	return app
+}
+
+func (a *App) loadConfig() {
+	if _, err := os.Stat(a.configPath); os.IsNotExist(err) {
+		return
+	}
+
+	data, err := os.ReadFile(a.configPath)
+	if err != nil {
+		log.Printf("读取配置文件失败: %v", err)
+		return
+	}
+
+	var config ConfigFile
+	if err := json.Unmarshal(data, &config); err != nil {
+		log.Printf("解析配置文件失败: %v", err)
+		return
+	}
+
+	a.mu.Lock()
+	a.modRotationConfig = config.ModRotationConfig
+	a.workshopPreferredIP = config.WorkshopPreferredIP
+	a.mu.Unlock()
+
+	log.Printf("已加载配置: 优选IP=%v, 轮换=%v", a.workshopPreferredIP, a.modRotationConfig)
+}
+
+func (a *App) saveConfig() {
+	a.mu.RLock()
+	config := ConfigFile{
+		ModRotationConfig:   a.modRotationConfig,
+		WorkshopPreferredIP: a.workshopPreferredIP,
+	}
+	a.mu.RUnlock()
+
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		log.Printf("序列化配置失败: %v", err)
+		return
+	}
+
+	if err := os.WriteFile(a.configPath, data, 0644); err != nil {
+		log.Printf("写入配置文件失败: %v", err)
 	}
 }
 
@@ -119,6 +193,20 @@ func (a *App) startup(ctx context.Context) {
 	go func() {
 		// 稍微延迟一下，确保旧进程完全退出
 		time.Sleep(2 * time.Second)
+
+		// 如果开启了优选IP，启动时自动触发
+		if a.GetWorkshopPreferredIP() {
+			log.Println("检测到优选IP已开启，后台启动IP优选...")
+			// 设置状态为正在选择
+			runtime.EventsEmit(a.ctx, "ip_selection_start", nil)
+
+			go func() {
+				// 使用一个典型的工坊图片域名来测试
+				globalIPSelector.GetBestIP("https://steamuserimages-a.akamaihd.net/ugc/test")
+				// 完成后通知前端
+				runtime.EventsEmit(a.ctx, "ip_selection_end", nil)
+			}()
+		}
 
 		exe, err := os.Executable()
 		if err != nil {
@@ -1734,6 +1822,56 @@ func (a *App) ToggleVPKVisibility(filePath string) (string, error) {
 	}
 
 	return newPath, nil
+}
+
+// SetWorkshopPreferredIP 开启/关闭工坊优选IP
+func (a *App) SetWorkshopPreferredIP(enabled bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.workshopPreferredIP = enabled
+
+	// 保存配置
+	// 注意：不能直接调用 a.saveConfig()，因为 saveConfig 会获取 RLock，这会导致死锁
+	// 所以我们在这里直接保存
+	config := ConfigFile{
+		ModRotationConfig:   a.modRotationConfig,
+		WorkshopPreferredIP: a.workshopPreferredIP,
+	}
+
+	go func() {
+		data, err := json.MarshalIndent(config, "", "  ")
+		if err == nil {
+			os.WriteFile(a.configPath, data, 0644)
+		}
+	}()
+
+	// 如果开启，立即触发一次IP优选（如果尚未优选）
+	if enabled {
+		runtime.EventsEmit(a.ctx, "ip_selection_start", nil)
+		go func() {
+			// 使用一个典型的工坊图片域名来测试
+			// 实际上 IPSelector 目前是硬编码了获取 IP 的逻辑，这里只需要触发一下
+			globalIPSelector.GetBestIP("https://steamuserimages-a.akamaihd.net/ugc/test")
+			runtime.EventsEmit(a.ctx, "ip_selection_end", nil)
+		}()
+	}
+}
+
+// GetWorkshopPreferredIP 获取当前是否开启优选IP
+func (a *App) GetWorkshopPreferredIP() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.workshopPreferredIP
+}
+
+// IsSelectingIP 检查是否正在优选IP
+func (a *App) IsSelectingIP() bool {
+	return globalIPSelector.IsSelecting()
+}
+
+// GetCurrentBestIP 获取当前优选IP
+func (a *App) GetCurrentBestIP() string {
+	return globalIPSelector.GetCachedBestIP()
 }
 
 // fuzzyMatch 判断 source 是否是 target 的模糊匹配（子序列匹配）

@@ -45,6 +45,8 @@ export function ForceExit():Promise<void>;
 
 export function GetAppVersion():Promise<string>;
 
+export function GetCurrentBestIP():Promise<string>;
+
 export function GetDownloadTasks():Promise<Array<main.DownloadTask>>;
 
 export function GetMapName(arg1:string):Promise<string>;
@@ -65,9 +67,13 @@ export function GetVPKPreviewImage(arg1:string):Promise<string>;
 
 export function GetWorkshopDetails(arg1:string):Promise<Array<main.WorkshopFileDetails>>;
 
+export function GetWorkshopPreferredIP():Promise<boolean>;
+
 export function HandleFileDrop(arg1:Array<string>):Promise<void>;
 
 export function HasActiveDownloads():Promise<boolean>;
+
+export function IsSelectingIP():Promise<boolean>;
 
 export function LaunchL4D2():Promise<void>;
 
@@ -100,6 +106,8 @@ export function SetModRotation(arg1:main.RotationConfig):Promise<void>;
 export function SetRootDirectory(arg1:string):Promise<void>;
 
 export function SetVPKTags(arg1:string,arg2:string,arg3:Array<string>):Promise<void>;
+
+export function SetWorkshopPreferredIP(arg1:boolean):Promise<void>;
 
 export function StartDownloadTask(arg1:main.WorkshopFileDetails,arg2:boolean):Promise<string>;
 

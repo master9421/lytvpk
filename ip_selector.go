@@ -50,17 +50,24 @@ func fetchRemoteIPs(domain string) ([]string, error) {
 type IPSelector struct {
 	cachedBestIP string
 	lastCheck    time.Time
+	isSelecting  bool
 	mu           sync.RWMutex
 }
 
 var globalIPSelector = &IPSelector{}
 
+func (s *IPSelector) IsSelecting() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.isSelecting
+}
+
 func (s *IPSelector) GetBestIP(testUrl string) string {
 	s.mu.RLock()
-	// Cache for 10 minutes
-	if s.cachedBestIP != "" && time.Since(s.lastCheck) < 10*time.Minute {
+	// 如果有缓存，直接使用（生命周期为整个程序运行期间）
+	if s.cachedBestIP != "" {
 		defer s.mu.RUnlock()
-		fmt.Printf("[IPSelector] Using cached best IP: %s (Last check: %v ago)\n", s.cachedBestIP, time.Since(s.lastCheck).Round(time.Second))
+		// fmt.Printf("[IPSelector] Using cached best IP: %s\n", s.cachedBestIP)
 		return s.cachedBestIP
 	}
 	s.mu.RUnlock()
@@ -68,14 +75,55 @@ func (s *IPSelector) GetBestIP(testUrl string) string {
 	return s.refreshBestIP(testUrl)
 }
 
+func (s *IPSelector) GetCachedBestIP() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.cachedBestIP
+}
+
 func (s *IPSelector) refreshBestIP(testUrl string) string {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	// 如果已经在优选，直接返回空字符串或者等待（这里简化为返回，前端会轮询状态）
+	// 但是为了防止多个协程同时进入，我们需要检查 isSelecting
+	if s.isSelecting {
+		s.mu.Unlock()
+		// 简单的自旋等待，或者直接返回空让调用者重试
+		// 实际上 GetBestIP 的调用者通常会等待结果，所以这里我们应该等待
+		// 但为了避免复杂性，我们只让第一个进入的协程执行，其他协程等待 cachedBestIP 被赋值
 
-	// Double check
-	if s.cachedBestIP != "" && time.Since(s.lastCheck) < 10*time.Minute {
+		// 轮询等待结果（最多等待30秒）
+		for i := 0; i < 60; i++ {
+			time.Sleep(500 * time.Millisecond)
+			s.mu.RLock()
+			if s.cachedBestIP != "" {
+				res := s.cachedBestIP
+				s.mu.RUnlock()
+				return res
+			}
+			if !s.isSelecting {
+				// 优选结束但没有结果？
+				s.mu.RUnlock()
+				return ""
+			}
+			s.mu.RUnlock()
+		}
+		return ""
+	}
+
+	// Double check cache
+	if s.cachedBestIP != "" {
+		s.mu.Unlock()
 		return s.cachedBestIP
 	}
+
+	s.isSelecting = true
+	s.mu.Unlock()
+
+	defer func() {
+		s.mu.Lock()
+		s.isSelecting = false
+		s.mu.Unlock()
+	}()
 
 	// Fetch remote IPs
 	var candidateIPs []string
@@ -109,11 +157,16 @@ func (s *IPSelector) refreshBestIP(testUrl string) string {
 	}
 
 	bestIP := selectBestIP(candidateIPs, testUrl)
+
+	s.mu.Lock()
 	if bestIP != "" {
 		s.cachedBestIP = bestIP
 		s.lastCheck = time.Now()
 	}
-	return s.cachedBestIP
+	result := s.cachedBestIP
+	s.mu.Unlock()
+
+	return result
 }
 
 func lookupIPWithDNS(dnsServer string, host string) ([]string, error) {
@@ -209,6 +262,9 @@ PING_DONE:
 
 	fmt.Println("[IPSelector] Starting download speed test...")
 
+	// 使用用户指定的测试链接
+	testUrl = "https://cdn.steamusercontent.com/ugc/1852675168601248369/F20C8BCDE3535FB6415810D1B0A3BD7B404E4346/"
+
 	for _, candidate := range topCandidates {
 		go func(ip string) {
 			speed, err := testDownloadSpeed(speedCtx, ip, testUrl)
@@ -221,6 +277,31 @@ PING_DONE:
 
 	var bestIP string
 	var maxSpeed float64 = -1
+
+	// 等待所有结果返回，而不是一旦找到一个就认为结束（虽然逻辑是选最快，但这里是等待所有协程完成）
+	// 注意：之前的逻辑是遍历 topCount 次，每次接收一个结果。
+	// 问题在于：如果超时了，goto SPEED_DONE，这时候可能已经打印了一些日志。
+	// 但实际上，打印 Best IP selected 的逻辑是在循环结束后。
+	// 日志重复的原因可能是：
+	// 1. 多个协程并发调用了 GetBestIP -> 导致多个 refreshBestIP 同时运行 (已修复)
+	// 2. 这里的循环逻辑有问题？
+	// 从用户日志看：
+	// [IPSelector] Best IP selected: 23.59.72.42 (Speed: 5.04 MB/s)  <-- 这里出现一次
+	// [IPSelector] 203.69.138.225 - Speed: 1.11 MB/s                 <-- 之后又打印了一个测速结果
+	// [IPSelector] Best IP selected: 23.59.72.59 (Speed: 6.05 MB/s)  <-- 又选出了一个更好的？
+
+	// 仔细看代码：
+	// 循环接收结果，每次接收到结果都会更新 maxSpeed 和 bestIP。
+	// 但是！之前的代码没有提前退出循环，而是接收完所有结果后才打印 Best IP。
+	// 等等，用户日志显示 Best IP 打印了两次，说明 refreshBestIP 被执行了两次！
+	// 第一次 Best IP 打印后，居然还有测速日志，然后又一次 Best IP。
+	// 这绝对是并发进入了 refreshBestIP。
+
+	// 我们之前加的锁逻辑：
+	// s.mu.Lock(); if s.isSelecting { ... }
+	// 这段代码是我刚才加上去的。
+	// 在用户遇到问题的时候，这段代码还不在。
+	// 所以，刚才的修复（防止重入）应该已经解决了这个问题。
 
 	for i := 0; i < topCount; i++ {
 		select {

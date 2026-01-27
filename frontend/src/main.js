@@ -42,6 +42,10 @@ import {
   FetchWorkshopList,
   FetchWorkshopDetail,
   GetVPKPreviewImage,
+  IsSelectingIP,
+  SetWorkshopPreferredIP,
+  GetWorkshopPreferredIP,
+  GetCurrentBestIP,
 } from "../wailsjs/go/main/App";
 
 import {
@@ -120,6 +124,32 @@ function initializeApp() {
   checkInitialDirectory();
   checkAndInstallUpdate();
   initModRotationState();
+  initWorkshopState();
+
+  // 监听IP优选事件
+  // 使用一个标志位来防止重复注册（虽然 EventsOn 理论上不会重复，但为了保险）
+  if (!window._ipEventsRegistered) {
+    EventsOn("ip_selection_start", () => {
+      console.log("IP优选开始");
+      // 不显示通知，后台静默处理
+    });
+
+    EventsOn("ip_selection_end", () => {
+      console.log("IP优选结束");
+      showMainScreen();
+      // showNotification("IP优选完成，已开启加速", "success");
+
+      // 如果工坊弹框是打开的，刷新列表
+      if (
+        !document.getElementById("browser-modal").classList.contains("hidden")
+      ) {
+        browserState.page = 1;
+        browserState.data = [];
+        loadWorkshopList();
+      }
+    });
+    window._ipEventsRegistered = true;
+  }
 }
 
 // 全局禁用右键菜单
@@ -2671,6 +2701,12 @@ async function initModRotationState() {
   }
 }
 
+async function initWorkshopState() {
+  const config = getConfig();
+  const enabled = config.workshopPreferredIP || false;
+  await SetWorkshopPreferredIP(enabled);
+}
+
 function updateModRotationUI(config) {
   const btn = document.getElementById("mod-rotation-btn");
   if (!btn) return;
@@ -3118,11 +3154,11 @@ async function checkWorkshopUrl() {
       }
     }
 
-    if (hasSteamCDN) {
+    if (hasSteamCDN && optimizedIpContainer) {
       optimizedIpContainer.classList.remove("hidden");
-    } else {
+    } else if (optimizedIpContainer) {
       optimizedIpContainer.classList.add("hidden");
-      document.getElementById("use-optimized-ip-global").checked = false;
+      // document.getElementById("use-optimized-ip-global").checked = false;
     }
 
     detailsList.forEach((details, index) => {
@@ -3162,9 +3198,8 @@ async function checkWorkshopUrl() {
     result.querySelectorAll(".download-item-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const index = parseInt(btn.dataset.index);
-        const useOptimizedIP = document.getElementById(
-          "use-optimized-ip-global"
-        ).checked;
+        const config = getConfig();
+        const useOptimizedIP = config.workshopPreferredIP || false;
         try {
           await StartDownloadTask(
             currentWorkshopDetails[index],
@@ -3207,10 +3242,36 @@ async function checkWorkshopUrl() {
 }
 
 async function downloadWorkshopFile() {
+  // 检查是否正在优选IP
+  const isSelecting = await IsSelectingIP();
+  if (isSelecting) {
+    const btn = document.getElementById("download-workshop-btn");
+    const originalText = btn.innerHTML;
+
+    // 禁用按钮并显示状态
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span> 正在优选线路...`;
+    showNotification("正在优选最佳线路，完成后自动开始下载", "info");
+
+    // 轮询等待优选结束
+    const checkInterval = setInterval(async () => {
+      const stillSelecting = await IsSelectingIP();
+      if (!stillSelecting) {
+        clearInterval(checkInterval);
+        // 恢复按钮状态
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        // 重新触发下载
+        downloadWorkshopFile();
+      }
+    }, 1000);
+
+    return;
+  }
+
   const downloadUrl = document.getElementById("download-url").value.trim();
-  const useOptimizedIP = document.getElementById(
-    "use-optimized-ip-global"
-  ).checked;
+  const config = getConfig();
+  const useOptimizedIP = config.workshopPreferredIP || false;
 
   // Handle multiple files download (Download All)
   if (
@@ -5126,7 +5187,100 @@ document.addEventListener("DOMContentLoaded", () => {
       loadWorkshopList();
     });
   }
+
+  // 工坊设置按钮
+  const settingsBtn = document.getElementById("global-settings-btn");
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", showGlobalSettings);
+  }
 });
+
+async function showGlobalSettings() {
+  try {
+    const enabled = await GetWorkshopPreferredIP();
+
+    // 获取优选状态
+    let ipStatusText = "";
+    if (enabled) {
+      const isSelecting = await IsSelectingIP();
+      if (isSelecting) {
+        ipStatusText = `<span style="color: var(--primary); font-size: 0.85em; display: block; margin-top: 4px;">正在优选最佳线路...</span>`;
+      } else {
+        const bestIP = await GetCurrentBestIP();
+        if (bestIP) {
+          ipStatusText = `<span style="color: var(--success); font-size: 0.85em; display: block; margin-top: 4px;">当前优选IP: ${bestIP}</span>`;
+        } else {
+          ipStatusText = `<span style="color: var(--text-tertiary); font-size: 0.85em; display: block; margin-top: 4px;">尚未获取到优选IP</span>`;
+        }
+      }
+    }
+
+    const htmlContent = `
+      <div class="settings-modal-body">
+        <div class="settings-section">
+            <h3 class="settings-section-title" style="margin: 0 0 15px 0; font-size: 1.1em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">网络设置</h3>
+            
+            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="setting-info" style="flex: 1; padding-right: 20px;">
+                    <div class="setting-label" style="font-weight: 500; color: var(--text-primary); margin-bottom: 2px;">开启优选IP加速</div>
+                    <div class="setting-desc" style="font-size: 0.85em; color: var(--text-secondary);">
+                        加速创意工坊图片与文件下载
+                    </div>
+                    ${ipStatusText}
+                </div>
+                <label class="toggle-switch" style="flex-shrink: 0;">
+                    <input type="checkbox" id="workshop-preferred-ip-check" ${enabled ? "checked" : ""}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+      </div>
+    `;
+
+    showConfirmModal(
+      "应用设置",
+      htmlContent,
+      async () => {
+        const checkbox = document.getElementById("workshop-preferred-ip-check");
+        if (!checkbox) return;
+
+        const newEnabled = checkbox.checked;
+
+        if (newEnabled !== enabled) {
+          // 保存配置到本地
+          const config = getConfig();
+          config.workshopPreferredIP = newEnabled;
+          saveConfig(config);
+
+          // 保存设置到后端
+          await SetWorkshopPreferredIP(newEnabled);
+
+          // 前端只负责通知，具体状态由事件监听处理
+          if (!newEnabled) {
+            showNotification("已关闭优选IP加速", "info");
+          } else {
+            showNotification("已开启优选IP加速", "success");
+          }
+
+          // 刷新当前页面 (如果在工坊中)
+          if (
+            !document
+              .getElementById("browser-modal")
+              .classList.contains("hidden")
+          ) {
+            browserState.page = 1;
+            browserState.data = [];
+            loadWorkshopList();
+          }
+        }
+      },
+      true // useHtml
+    );
+  } catch (err) {
+    console.error("获取设置失败:", err);
+    showError("无法打开设置: " + err);
+  }
+}
 
 function openBrowser() {
   const modal = document.getElementById("browser-modal");
@@ -5139,6 +5293,46 @@ function openBrowser() {
 }
 
 async function loadWorkshopList() {
+  // 检查是否正在优选IP
+  const isSelecting = await IsSelectingIP();
+  if (isSelecting) {
+    const grid = document.getElementById("browser-grid");
+    const loadingEl = document.getElementById("browser-loading");
+    const loadMoreBtn = document.getElementById("browser-load-more");
+
+    // 隐藏加载更多按钮
+    if (loadMoreBtn) loadMoreBtn.classList.add("hidden");
+
+    // 清空现有内容 (仅当第一页时)
+    if (grid && browserState.page === 1) grid.innerHTML = "";
+
+    // 显示加载状态
+    if (loadingEl) {
+      loadingEl.classList.remove("hidden");
+      loadingEl.innerHTML = `
+        <div class="loading-spinner" style="margin: 0 auto 20px;"></div>
+        <div style="text-align: center; color: var(--text-secondary);">
+            正在优选最佳网络线路...<br>
+            <span style="font-size: 0.85em; color: var(--text-tertiary); margin-top: 8px; display: block;">优选完成后将自动加载工坊列表</span>
+        </div>
+      `;
+    }
+
+    // 轮询等待优选结束
+    const checkInterval = setInterval(async () => {
+      const stillSelecting = await IsSelectingIP();
+      if (!stillSelecting) {
+        clearInterval(checkInterval);
+        // 恢复默认加载提示
+        if (loadingEl) loadingEl.innerHTML = "加载中...";
+        // 重新触发加载
+        loadWorkshopList();
+      }
+    }, 1000);
+
+    return;
+  }
+
   if (browserState.loading && browserState.page > 1) return; // 第一页允许重刷
 
   // 隐藏详情页

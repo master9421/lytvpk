@@ -175,6 +175,13 @@ func (a *App) FetchWorkshopList(opts WorkshopQueryOptions) (WorkshopListResult, 
 		Total: result.Response.Total,
 	}
 
+	// Process images if preferred IP is enabled
+	if a.GetWorkshopPreferredIP() {
+		for i := range finalResult.Items {
+			finalResult.Items[i].PreviewUrl = a.processWorkshopImage(finalResult.Items[i].PreviewUrl)
+		}
+	}
+
 	// 写入缓存
 	setWorkshopCache(cacheKey, finalResult)
 
@@ -212,7 +219,22 @@ func (a *App) FetchWorkshopDetail(id string) (WorkshopItemDetail, error) {
 	}
 
 	item := result.Response.PublishedFileDetails[0]
+
+	if a.GetWorkshopPreferredIP() {
+		item.PreviewUrl = a.processWorkshopImage(item.PreviewUrl)
+		for i := range item.Previews {
+			item.Previews[i].PreviewUrl = a.processWorkshopImage(item.Previews[i].PreviewUrl)
+		}
+	}
+
 	setWorkshopCache(cacheKey, item)
 
 	return item, nil
+}
+
+func (a *App) processWorkshopImage(url string) string {
+	if a.GetWorkshopPreferredIP() && a.proxyServer != nil {
+		return a.proxyServer.GetProxyUrl(url)
+	}
+	return url
 }

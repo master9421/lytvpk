@@ -355,9 +355,19 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, downl
 
 	// IP Optimization
 	var bestIP string
+	// Check global preferred IP setting
+	if a.GetWorkshopPreferredIP() {
+		task.UseOptimizedIP = true
+	}
+
 	if task.UseOptimizedIP {
 		updateStatus("selecting_ip", "")
-		bestIP = globalIPSelector.GetBestIP(downloadUrl)
+		// 使用 proxy.go 相同的优选IP获取逻辑
+		bestIP = globalIPSelector.GetCachedBestIP()
+		// 如果缓存没有，则重新获取
+		if bestIP == "" {
+			bestIP = globalIPSelector.GetBestIP(downloadUrl)
+		}
 		updateStatus("downloading", "")
 	}
 

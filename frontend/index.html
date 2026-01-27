@@ -138,8 +138,38 @@
               </svg>
               <span>收藏服务器</span>
             </button>
+            <button id="global-settings-btn" class="btn-icon" title="设置">
+              <svg
+                class="icon-svg"
+                style="width: 20px; height: 20px"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                ></path>
+              </svg>
+            </button>
             <button id="info-btn" class="btn-icon" title="关于">
-              <span class="icon">🛈</span>
+              <svg
+                class="icon-svg"
+                style="width: 20px; height: 20px"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
             </button>
           </div>
         </header>
@@ -693,15 +723,6 @@
                   <span class="icon">📄</span> 复制
                 </button>
               </div>
-              <div id="optimized-ip-container" class="hidden mt-12">
-                <label class="toggle-switch">
-                  <input type="checkbox" id="use-optimized-ip-global" />
-                  <span class="toggle-slider"></span>
-                  <span class="toggle-label"
-                    >使用优选IP加速下载 (针对Steam CDN)</span
-                  >
-                </label>
-              </div>
             </div>
 
             <div id="workshop-result" class="workshop-result hidden mt-20">
@@ -732,7 +753,7 @@
       </div>
 
       <!-- 确认对话框 -->
-      <div id="confirm-modal" class="modal hidden">
+      <div id="confirm-modal" class="modal hidden" style="z-index: 2100">
         <div class="modal-content confirm-modal-content">
           <div class="modal-header">
             <h2 id="confirm-title">确认</h2>

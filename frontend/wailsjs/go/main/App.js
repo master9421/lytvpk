@@ -86,6 +86,10 @@ export function GetAppVersion() {
   return window['go']['main']['App']['GetAppVersion']();
 }
 
+export function GetCurrentBestIP() {
+  return window['go']['main']['App']['GetCurrentBestIP']();
+}
+
 export function GetDownloadTasks() {
   return window['go']['main']['App']['GetDownloadTasks']();
 }
@@ -126,12 +130,20 @@ export function GetWorkshopDetails(arg1) {
   return window['go']['main']['App']['GetWorkshopDetails'](arg1);
 }
 
+export function GetWorkshopPreferredIP() {
+  return window['go']['main']['App']['GetWorkshopPreferredIP']();
+}
+
 export function HandleFileDrop(arg1) {
   return window['go']['main']['App']['HandleFileDrop'](arg1);
 }
 
 export function HasActiveDownloads() {
   return window['go']['main']['App']['HasActiveDownloads']();
+}
+
+export function IsSelectingIP() {
+  return window['go']['main']['App']['IsSelectingIP']();
 }
 
 export function LaunchL4D2() {
@@ -196,6 +208,10 @@ export function SetRootDirectory(arg1) {
 
 export function SetVPKTags(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetVPKTags'](arg1, arg2, arg3);
+}
+
+export function SetWorkshopPreferredIP(arg1) {
+  return window['go']['main']['App']['SetWorkshopPreferredIP'](arg1);
 }
 
 export function StartDownloadTask(arg1, arg2) {
