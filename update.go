@@ -40,7 +40,6 @@ type GithubRelease struct {
 
 // MirrorList 镜像源列表 (与前端保持一致)
 var MirrorList = []string{
-	"https://edgeone.gh-proxy.com/",
 	"https://hk.gh-proxy.com/",
 	"https://gh-proxy.com/",
 	"https://gh.llkk.cc/",
