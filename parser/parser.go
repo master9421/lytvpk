@@ -200,12 +200,17 @@ func ExtractPreviewImage(opener *vpk.Opener, archive *vpk.Archive, vpkFilePath s
 		}
 	}
 
-	// ========== 优先级 3: 查找外部同名 .jpg 文件 ==========
+	// ========== 优先级 3: 查找外部同名图片文件 (.jpg, .png, .jpeg) ==========
 	// 例如: xxx.vpk -> xxx.jpg
-	externalJpgPath := strings.TrimSuffix(vpkFilePath, filepath.Ext(vpkFilePath)) + ".jpg"
-	if fileExists(externalJpgPath) {
-		if base64Data := readExternalImageFile(externalJpgPath); base64Data != "" {
-			return base64Data
+	basePath := strings.TrimSuffix(vpkFilePath, filepath.Ext(vpkFilePath))
+	exts := []string{".jpg", ".png", ".jpeg"}
+
+	for _, ext := range exts {
+		externalPath := basePath + ext
+		if fileExists(externalPath) {
+			if base64Data := readExternalImageFile(externalPath); base64Data != "" {
+				return base64Data
+			}
 		}
 	}
 

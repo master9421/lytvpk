@@ -614,6 +614,42 @@ func (a *App) processDownloadTask(ctx context.Context, task *DownloadTask, downl
 		return
 	}
 
+	// 尝试下载预览图作为同名文件
+	if task.PreviewUrl != "" {
+		// 确定图片扩展名和目标路径
+		// 默认使用 jpg，或者根据 url 后缀
+		imgExt := ".jpg"
+		if strings.HasSuffix(strings.ToLower(task.PreviewUrl), ".png") {
+			imgExt = ".png"
+		} else if strings.HasSuffix(strings.ToLower(task.PreviewUrl), ".jpeg") {
+			imgExt = ".jpeg"
+		}
+
+		vpkExt := filepath.Ext(targetPath)
+		imgPath := strings.TrimSuffix(targetPath, vpkExt) + imgExt
+
+		// 同步下载图片，确保任务完成时图片已就绪
+		// 设置较短的超时，避免长时间阻塞
+		func(url, path string) {
+			client := &http.Client{
+				Timeout: 10 * time.Second,
+			}
+			resp, err := client.Get(url)
+			if err != nil {
+				return
+			}
+			defer resp.Body.Close()
+
+			out, err := os.Create(path)
+			if err != nil {
+				return
+			}
+			defer out.Close()
+
+			io.Copy(out, resp.Body)
+		}(task.PreviewUrl, imgPath)
+	}
+
 	// 如果是直连下载且是压缩文件，自动解压
 	ext := strings.ToLower(filepath.Ext(targetPath))
 	if strings.HasPrefix(task.WorkshopID, "direct-") && (ext == ".zip" || ext == ".rar" || ext == ".7z") {

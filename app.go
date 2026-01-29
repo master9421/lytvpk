@@ -64,10 +64,11 @@ type ErrorInfo struct {
 
 // VPKFileCache 缓存的VPK文件信息
 type VPKFileCache struct {
-	File     VPKFile
-	ModTime  time.Time
-	Size     int64
-	CachedAt time.Time
+	File         VPKFile
+	ModTime      time.Time
+	Size         int64
+	ImageModTime time.Time // 外部图片修改时间
+	CachedAt     time.Time
 }
 
 // App struct
@@ -373,13 +374,24 @@ func (a *App) processVPKFileWithCache(filePath string) {
 	modTime := info.ModTime()
 	size := info.Size()
 
+	// 检查外部图片状态
+	var imgModTime time.Time
+	basePath := strings.TrimSuffix(filePath, filepath.Ext(filePath))
+	exts := []string{".jpg", ".png", ".jpeg"}
+	for _, ext := range exts {
+		if imgInfo, statErr := os.Stat(basePath + ext); statErr == nil {
+			imgModTime = imgInfo.ModTime()
+			break
+		}
+	}
+
 	// 检查缓存
 	if cached, ok := a.vpkCache.Load(filePath); ok {
 		cache := cached.(*VPKFileCache)
 
-		// 判断文件是否变化（通过修改时间和大小）
-		if cache.ModTime.Equal(modTime) && cache.Size == size {
-			// 文件未变化，使用缓存
+		// 判断文件是否变化（通过修改时间和大小）以及图片是否变化
+		if cache.ModTime.Equal(modTime) && cache.Size == size && cache.ImageModTime.Equal(imgModTime) {
+			// 文件和图片都未变化，使用缓存
 			// 但需要更新位置信息（因为文件可能被移动）
 			location := a.getLocationFromPath(filePath)
 			cache.File.Location = location
@@ -392,7 +404,7 @@ func (a *App) processVPKFileWithCache(filePath string) {
 			return
 		}
 
-		log.Printf("文件已变化，重新解析: %s", filepath.Base(filePath))
+		log.Printf("文件或图片已变化，重新解析: %s", filepath.Base(filePath))
 	}
 
 	// 文件不在缓存中或已变化，需要重新解析
@@ -412,10 +424,11 @@ func (a *App) processVPKFileWithCache(filePath string) {
 
 	// 存入缓存
 	cache := &VPKFileCache{
-		File:     *vpkFile,
-		ModTime:  modTime,
-		Size:     size,
-		CachedAt: time.Now(),
+		File:         *vpkFile,
+		ModTime:      modTime,
+		Size:         size,
+		ImageModTime: imgModTime,
+		CachedAt:     time.Now(),
 	}
 	a.vpkCache.Store(filePath, cache)
 
@@ -498,6 +511,8 @@ func (a *App) ToggleVPKFile(filePath string) error {
 		if err != nil {
 			return err
 		}
+		// 同步移动同名图片
+		a.handleSidecarFile(vpkFile.Path, newPath, "move")
 
 		// 更新文件信息
 		vpkFile.Path = newPath
@@ -511,6 +526,8 @@ func (a *App) ToggleVPKFile(filePath string) error {
 		if err != nil {
 			return err
 		}
+		// 同步移动同名图片
+		a.handleSidecarFile(vpkFile.Path, newPath, "move")
 
 		// 更新文件信息
 		vpkFile.Path = newPath
@@ -556,6 +573,8 @@ func (a *App) MoveWorkshopToAddons(filePath string) error {
 	if err != nil {
 		return err
 	}
+	// 同步移动同名图片
+	a.handleSidecarFile(vpkFile.Path, newPath, "move")
 
 	// 转移到root目录后，文件默认为启用状态
 	vpkFile.Path = newPath
@@ -818,31 +837,46 @@ func (a *App) OpenFileLocation(filePath string) error {
 		return fmt.Errorf("文件路径为空")
 	}
 
-	// 检查文件是否存在
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("文件不存在: %s", filePath)
+	// 规范化路径，解决 Windows 路径分隔符不一致的问题
+	cleanPath := filepath.Clean(filePath)
+
+	absPath, err := filepath.Abs(cleanPath)
+	if err == nil {
+		cleanPath = absPath
 	}
 
-	// 获取文件所在目录
-	dir := filepath.Dir(filePath)
+	// 检查文件是否存在
+	if _, statErr := os.Stat(cleanPath); os.IsNotExist(statErr) {
+		return fmt.Errorf("文件不存在: %s", cleanPath)
+	}
 
 	// 根据操作系统打开文件管理器
 	var cmd *exec.Cmd
 	switch rt.GOOS {
 	case "windows":
 		// Windows: 使用 explorer 并选中文件
-		cmd = exec.Command("explorer", "/select,", filePath)
+		// 尝试先替换掉正斜杠
+		winPath := strings.ReplaceAll(cleanPath, "/", "\\")
+
+		// 如果路径包含逗号，explorer /select,path 会失败，因为逗号是分隔符
+		if strings.Contains(winPath, ",") {
+			// 如果包含逗号，/select, 可能无法工作。尝试只打开文件夹
+			cmd = exec.Command("explorer", filepath.Dir(winPath))
+		} else {
+			cmd = exec.Command("explorer", "/select,", winPath)
+		}
 	case "darwin":
 		// macOS: 使用 open 并选中文件
-		cmd = exec.Command("open", "-R", filePath)
+		cmd = exec.Command("open", "-R", cleanPath)
 	case "linux":
-		// Linux: 使用 xdg-open 打开目录（大部分 Linux 文件管理器不支持选中文件）
+		// Linux: 使用 xdg-open 打开目录
+		dir := filepath.Dir(cleanPath)
 		cmd = exec.Command("xdg-open", dir)
 	default:
 		return fmt.Errorf("不支持的操作系统: %s", rt.GOOS)
 	}
 
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("打开文件位置失败: %s", err.Error())
 	}
@@ -866,6 +900,8 @@ func (a *App) DeleteVPKFile(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("删除文件失败: %s", err.Error())
 	}
+	// 同步删除同名图片
+	a.handleSidecarFile(filePath, "", "delete")
 
 	return nil
 }
@@ -891,6 +927,9 @@ func (a *App) DeleteVPKFiles(filePaths []string) error {
 		err := trash.Throw(filePath)
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("删除文件 %s 失败: %v", filePath, err))
+		} else {
+			// 同步删除同名图片
+			a.handleSidecarFile(filePath, "", "delete")
 		}
 	}
 
@@ -1821,6 +1860,8 @@ func (a *App) ToggleVPKVisibility(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// 同步重命名同名图片
+	a.handleSidecarFile(filePath, newPath, "move")
 
 	return newPath, nil
 }
@@ -2025,6 +2066,8 @@ func (a *App) SetVPKTags(filePath string, primaryTag string, secondaryTags []str
 	if err := os.Rename(filePath, newPath); err != nil {
 		return err
 	}
+	// 同步重命名同名图片
+	a.handleSidecarFile(filePath, newPath, "move")
 
 	// Update cache
 	// 如果是清除标签操作（len(allTags) == 0），则不复用旧缓存，而是强制重新解析
@@ -2101,6 +2144,8 @@ func (a *App) RenameVPKFile(filePath string, newFilename string) (string, error)
 	if err != nil {
 		return "", err
 	}
+	// 同步重命名同名图片
+	a.handleSidecarFile(filePath, newPath, "move")
 
 	// 更新缓存
 	if cached, ok := a.vpkCache.Load(filePath); ok {
