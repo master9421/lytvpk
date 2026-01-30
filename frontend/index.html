@@ -531,26 +531,6 @@
         </div>
       </div>
 
-      <!-- 通用消息弹窗 -->
-      <div id="message-modal" class="modal hidden">
-        <div class="modal-content modal-small">
-          <div class="modal-header">
-            <h3 id="message-modal-title">提示</h3>
-            <button id="close-message-modal-btn" class="close-btn">
-              &times;
-            </button>
-          </div>
-          <div class="modal-body">
-            <div id="message-modal-content" class="message-content"></div>
-          </div>
-          <div class="modal-footer">
-            <button id="message-modal-confirm-btn" class="btn btn-primary">
-              确定
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- 文件详情弹窗 -->
       <div id="file-detail-modal" class="modal hidden">
         <div class="modal-content">
@@ -748,27 +728,6 @@
                 <div class="empty-tasks">暂无下载任务</div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 确认对话框 -->
-      <div id="confirm-modal" class="modal hidden" style="z-index: 2100">
-        <div class="modal-content confirm-modal-content">
-          <div class="modal-header">
-            <h2 id="confirm-title">确认</h2>
-            <button id="close-confirm-modal-btn" class="close-btn">
-              &times;
-            </button>
-          </div>
-          <div class="modal-body">
-            <p id="confirm-message" class="confirm-message"></p>
-          </div>
-          <div class="modal-footer">
-            <button id="confirm-cancel-btn" class="btn btn-secondary">
-              取消
-            </button>
-            <button id="confirm-ok-btn" class="btn btn-primary">确定</button>
           </div>
         </div>
       </div>
@@ -1235,6 +1194,47 @@
         </div>
       </div>
     </div>
+    <!-- 确认对话框 -->
+    <div id="confirm-modal" class="modal hidden" style="z-index: 20000">
+      <div class="modal-content confirm-modal-content">
+        <div class="modal-header">
+          <h2 id="confirm-title">确认</h2>
+          <button id="close-confirm-modal-btn" class="close-btn">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-message" class="confirm-message"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirm-cancel-btn" class="btn btn-secondary">
+            取消
+          </button>
+          <button id="confirm-ok-btn" class="btn btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通用消息弹窗 -->
+    <div id="message-modal" class="modal hidden" style="z-index: 20001">
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h3 id="message-modal-title">提示</h3>
+          <button id="close-message-modal-btn" class="close-btn">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="message-modal-content" class="message-content"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="message-modal-confirm-btn" class="btn btn-primary">
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Image Preview Modal -->
     <div id="image-preview-modal" class="image-modal">
       <span class="image-modal-close">&times;</span>

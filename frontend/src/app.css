@@ -3023,7 +3023,12 @@ body {
 
 /* 提高确认对话框的层级，使其在其他模态框之上 */
 #confirm-modal {
-  z-index: 1100; /* 比默认模态框层级(1050)高 */
+  z-index: 20000 !important; /* 确保在最上层，覆盖 titlebar.css 的设置 */
+}
+
+/* 提高通用消息弹窗的层级，使其在其他模态框之上 */
+#message-modal {
+  z-index: 20001 !important; /* 比确认对话框更高 */
 }
 
 /* Server List Styles */
