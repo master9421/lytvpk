@@ -15,6 +15,7 @@
 :root {
   /* 主色调 - 现代蓝 */
   --primary: #4f46e5;
+  --primary-color: var(--primary);
   --primary-light: #6366f1;
   --primary-dark: #3730a3;
   --primary-50: rgba(79, 70, 229, 0.05);
@@ -55,6 +56,7 @@
   --bg-card: #f1f5f9;
   --bg-hover: #e2e8f0;
   --bg-active: #cbd5e1;
+  --bg-secondary: #f1f5f9;
   --bg-overlay: rgba(255, 255, 255, 0.95);
 
   /* 文本颜色 */
@@ -68,6 +70,7 @@
   --border-default: rgba(203, 213, 225, 0.3);
   --border-light: rgba(203, 213, 225, 0.5);
   --border-strong: rgba(148, 163, 184, 0.8);
+  --border-color: rgba(203, 213, 225, 0.3);
 
   /* 阴影系统 */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);

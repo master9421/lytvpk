@@ -504,17 +504,33 @@
 
               <div class="update-options">
                 <label for="mirror-select">下载源选择:</label>
-                <div class="select-wrapper">
-                  <select id="mirror-select" class="form-select">
-                    <option value="">GitHub 直连</option>
-                    <option value="custom">自定义镜像源...</option>
-                  </select>
-                  <div class="select-arrow">▼</div>
+                <div class="custom-select-container" id="mirror-select-container">
+                  <div class="custom-select-trigger" id="mirror-select-trigger" tabindex="0">
+                      <span id="mirror-selected-text">GitHub 直连</span>
+                      <div class="select-icons">
+                           <span id="mirror-loading-icon" class="hidden loading-spinner-small"></span>
+                           <span class="select-arrow">▼</span>
+                      </div>
+                  </div>
+                  <div class="custom-select-dropdown hidden" id="mirror-select-dropdown">
+                      <div class="dropdown-header-actions">
+                          <span class="dropdown-label">选择下载源</span>
+                           <button id="refresh-mirrors-btn" class="btn-icon-small" title="刷新延迟">
+                              ↻
+                           </button>
+                      </div>
+                      <div id="mirror-list-content" class="custom-options-list">
+                          <!-- Options injected by JS -->
+                      </div>
+                  </div>
                 </div>
+                <!-- Hidden input to store value compatible with old logic -->
+                <input type="hidden" id="mirror-select-value" value="">
+
                 <input
                   type="text"
                   id="custom-mirror-input"
-                  class="form-input hidden custom-mirror-input"
+                  class="form-input hidden custom-mirror-input mt-8"
                   placeholder="输入镜像地址 (例如 https://mirror.example.com/)"
                 />
               </div>

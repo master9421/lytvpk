@@ -34,6 +34,7 @@ import {
   CheckUpdate,
   DoUpdate,
   GetMirrors,
+  GetMirrorsLatency,
   AutoDiscoverAddons,
   ExportVPKFilesToZip,
   RenameVPKFile,
@@ -4923,7 +4924,17 @@ async function showUpdateModal(info) {
   const newVer = document.getElementById("new-version-number");
   const curVer = document.getElementById("current-version-number");
   const notes = document.getElementById("release-notes-content");
-  const mirrorSelect = document.getElementById("mirror-select");
+  
+  // Custom Select Elements
+  const mirrorSelectContainer = document.getElementById("mirror-select-container");
+  const mirrorSelectTrigger = document.getElementById("mirror-select-trigger");
+  const mirrorSelectDropdown = document.getElementById("mirror-select-dropdown");
+  const mirrorListContent = document.getElementById("mirror-list-content");
+  const mirrorSelectedText = document.getElementById("mirror-selected-text");
+  const mirrorLoadingIcon = document.getElementById("mirror-loading-icon");
+  const refreshMirrorsBtn = document.getElementById("refresh-mirrors-btn");
+  const mirrorSelectValue = document.getElementById("mirror-select-value"); // Hidden input
+
   const customInput = document.getElementById("custom-mirror-input");
   const confirmBtn = document.getElementById("confirm-update-btn");
   const cancelBtn = document.getElementById("cancel-update-btn");
@@ -4940,43 +4951,153 @@ async function showUpdateModal(info) {
   curVer.textContent = info.current_ver;
   notes.textContent = info.release_note || "暂无更新日志";
 
-  // 加载镜像列表
-  try {
-    const mirrors = await GetMirrors();
-    mirrorSelect.innerHTML = '<option value="">GitHub 直连</option>';
-    if (mirrors && mirrors.length > 0) {
-      mirrors.forEach((mirror) => {
-        const option = document.createElement("option");
-        option.value = mirror;
-        option.textContent = mirror;
-        mirrorSelect.appendChild(option);
-      });
-    }
-    const customOption = document.createElement("option");
-    customOption.value = "custom";
-    customOption.textContent = "自定义镜像源...";
-    mirrorSelect.appendChild(customOption);
-  } catch (e) {
-    console.error("Failed to load mirrors:", e);
-  }
-
-  // 重置状态
-  mirrorSelect.value = "";
+  // Reset UI
+  mirrorSelectValue.value = "";
+  mirrorSelectedText.textContent = "GitHub 直连";
   customInput.classList.add("hidden");
   customInput.value = "";
   progressContainer.classList.add("hidden");
   modalFooter.classList.remove("hidden");
   confirmBtn.disabled = false;
   confirmBtn.textContent = "立即更新";
+  mirrorSelectDropdown.classList.add("hidden");
+  mirrorLoadingIcon.classList.add("hidden");
 
-  // 镜像选择事件
-  mirrorSelect.onchange = () => {
-    if (mirrorSelect.value === "custom") {
-      customInput.classList.remove("hidden");
-    } else {
-      customInput.classList.add("hidden");
-    }
+  // --- Mirror Logic Start ---
+  
+  const getLatencyClass = (ms) => {
+      if (ms < 0) return "error";
+      if (ms < 200) return "good";
+      if (ms < 500) return "medium";
+      return "bad";
   };
+
+  const formatLatency = (ms) => {
+      if (!ms || ms < 0) return "超时";
+      return ms + " ms";
+  };
+
+  const selectMirror = (value, text) => {
+      mirrorSelectValue.value = value;
+      mirrorSelectedText.textContent = text;
+      
+      if (value === "custom") {
+          customInput.classList.remove("hidden");
+          customInput.focus();
+      } else {
+          customInput.classList.add("hidden");
+      }
+
+      // Update selected style
+      const options = mirrorListContent.querySelectorAll(".custom-option");
+      options.forEach(opt => {
+         opt.classList.remove("selected");
+         // Simple matching logic
+         const urlSpan = opt.querySelector(".mirror-url");
+         if (urlSpan && urlSpan.textContent === text) {
+             opt.classList.add("selected");
+         }
+      });
+
+      mirrorSelectDropdown.classList.add("hidden");
+  };
+
+  const renderMirrors = (results) => {
+      mirrorListContent.innerHTML = "";
+      
+      // Add Direct option
+      const directOption = document.createElement("div");
+      directOption.className = "custom-option";
+      if (mirrorSelectValue.value === "") directOption.classList.add("selected");
+      
+      const directLatency = results ? (results.find(r => r.url === "")?.latency || -1) : -1;
+      directOption.innerHTML = `
+          <span class="mirror-url">GitHub 直连</span>
+          <span class="mirror-latency ${getLatencyClass(directLatency)}">
+            ${formatLatency(directLatency)}
+          </span>
+      `;
+      directOption.onclick = () => selectMirror("", "GitHub 直连");
+      mirrorListContent.appendChild(directOption);
+
+      // Add Mirrors
+      if (results && results.length > 0) {
+          results.forEach(res => {
+              if (res.url === "") return; // Skip direct (handled above)
+              const option = document.createElement("div");
+              option.className = "custom-option";
+              if (mirrorSelectValue.value === res.url) option.classList.add("selected");
+              option.innerHTML = `
+                  <span class="mirror-url" title="${res.url}">${res.url}</span>
+                  <span class="mirror-latency ${getLatencyClass(res.latency)}">${formatLatency(res.latency)}</span>
+              `;
+              option.onclick = () => selectMirror(res.url, res.url);
+              mirrorListContent.appendChild(option);
+          });
+      }
+
+      // Add Custom option
+      const customOption = document.createElement("div");
+      customOption.className = "custom-option";
+      if (mirrorSelectValue.value === "custom") customOption.classList.add("selected");
+      customOption.innerHTML = `<span class="mirror-url">自定义镜像源...</span>`;
+      customOption.onclick = () => selectMirror("custom", "自定义镜像源...");
+      mirrorListContent.appendChild(customOption);
+  };
+
+  const refreshMirrors = async () => {
+      mirrorLoadingIcon.classList.remove("hidden");
+      if (refreshMirrorsBtn) refreshMirrorsBtn.disabled = true;
+      
+      try {
+          // Use GetMirrorsLatency from Go
+          const results = await window.go.main.App.GetMirrorsLatency();
+          renderMirrors(results);
+      } catch (e) {
+          console.error("Failed to load mirrors:", e);
+          mirrorListContent.innerHTML = `<div class="p-10 text-center text-error">加载失败: ${e}</div>`;
+      } finally {
+          mirrorLoadingIcon.classList.add("hidden");
+          if (refreshMirrorsBtn) refreshMirrorsBtn.disabled = false;
+      }
+  };
+
+  // Event Listeners
+  // Note: Cloning node to remove previous event listeners is a quick hack, but here we can just re-assign onclick
+  // Better to remove old listener if possible, but anonymous functions make it hard.
+  // We will assign onclick directly which overwrites previous.
+
+  mirrorSelectTrigger.onclick = (e) => {
+      e.stopPropagation();
+      mirrorSelectDropdown.classList.toggle("hidden");
+      
+      // Auto scroll to show dropdown content
+      if (!mirrorSelectDropdown.classList.contains("hidden")) {
+          setTimeout(() => {
+              mirrorSelectDropdown.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 10);
+      }
+  };
+
+  refreshMirrorsBtn.onclick = (e) => {
+      e.stopPropagation(); // Prevent closing dropdown
+      refreshMirrors();
+  };
+
+  // Close dropdown when clicking outside
+  const closeDropdown = (e) => {
+      if (mirrorSelectContainer && !mirrorSelectContainer.contains(e.target)) {
+          mirrorSelectDropdown.classList.add("hidden");
+      }
+  };
+  // Remove existing listener if any (not easily possible with anonymous, but we add new one)
+  // To avoid duplicates on multiple opens, we can name the function and remove it in cleanup.
+  document.addEventListener("click", closeDropdown);
+
+  // Initial Load
+  refreshMirrors();
+  
+  // --- Mirror Logic End ---
 
   let cancelProgress = null;
 
@@ -4986,6 +5107,7 @@ async function showUpdateModal(info) {
       cancelProgress();
       cancelProgress = null;
     }
+    document.removeEventListener("click", closeDropdown);
     modal.classList.add("hidden");
   };
 
@@ -5000,7 +5122,7 @@ async function showUpdateModal(info) {
 
   // 确认更新
   confirmBtn.onclick = async () => {
-    let mirror = mirrorSelect.value;
+    let mirror = mirrorSelectValue.value;
     if (mirror === "custom") {
       mirror = customInput.value.trim();
       if (!mirror) {

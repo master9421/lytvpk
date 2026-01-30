@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blang/semver"
@@ -340,6 +343,65 @@ func (a *App) downloadWithProgress(url string, destPath string) error {
 		return err
 	}
 	return nil
+}
+
+// PingResult 镜像延迟测试结果
+type PingResult struct {
+	URL     string `json:"url"`
+	Latency int64  `json:"latency"` // ms, -1 if failed
+}
+
+// GetMirrorsLatency 测试所有镜像源的延迟
+func (a *App) GetMirrorsLatency() []PingResult {
+	var results []PingResult
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	// 包含直连和所有镜像
+	targets := append([]string{""}, MirrorList...)
+
+	for _, m := range targets {
+		wg.Add(1)
+		go func(urlStr string) {
+			defer wg.Done()
+			latency := int64(-1)
+
+			// 直连测试
+			targetURL := urlStr
+			if targetURL == "" {
+				// GitHub 直连
+				targetURL = "https://github.com"
+			}
+
+			// 解析 URL
+			u, err := url.Parse(targetURL)
+			if err == nil {
+				host := u.Host
+				// 如果没有端口，根据 scheme 添加
+				if !strings.Contains(host, ":") {
+					if u.Scheme == "https" {
+						host += ":443"
+					} else {
+						host += ":80"
+					}
+				}
+
+				start := time.Now()
+				conn, err := net.DialTimeout("tcp", host, 3*time.Second) // 3秒超时
+				if err == nil {
+					conn.Close()
+					latency = time.Since(start).Milliseconds()
+				}
+			}
+
+			mu.Lock()
+			results = append(results, PingResult{URL: urlStr, Latency: latency})
+			mu.Unlock()
+		}(m)
+	}
+
+	wg.Wait()
+	return results
 }
 
 type WriteCounter struct {

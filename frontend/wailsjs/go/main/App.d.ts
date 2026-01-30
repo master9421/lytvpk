@@ -55,6 +55,8 @@ export function GetMapName(arg1:string):Promise<string>;
 
 export function GetMirrors():Promise<Array<string>>;
 
+export function GetMirrorsLatency():Promise<Array<main.PingResult>>;
+
 export function GetModRotation():Promise<main.RotationConfig>;
 
 export function GetPrimaryTags():Promise<Array<string>>;

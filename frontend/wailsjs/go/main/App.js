@@ -106,6 +106,10 @@ export function GetMirrors() {
   return window['go']['main']['App']['GetMirrors']();
 }
 
+export function GetMirrorsLatency() {
+  return window['go']['main']['App']['GetMirrorsLatency']();
+}
+
 export function GetModRotation() {
   return window['go']['main']['App']['GetModRotation']();
 }
