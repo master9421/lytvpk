@@ -52,6 +52,7 @@
 
   /* 背景层级 - 现代白色主题 */
   --bg-app: #ffffff;
+  --bg-base: #ffffff;
   --bg-surface: #f8fafc;
   --bg-card: #f1f5f9;
   --bg-hover: #e2e8f0;
@@ -156,6 +157,116 @@
 
   /* Wails 拖拽配置 */
   --wails-drop-target: drop;
+}
+
+/* 深色模式变量覆盖 */
+html.dark {
+  /* 背景层级 - 深色主题 */
+  --bg-app: #0f172a;
+  --bg-base: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-card: #334155;
+  --bg-hover: #475569;
+  --bg-active: #64748b;
+  --bg-primary: #1e293b;
+  --bg-secondary: #334155;
+  --bg-overlay: rgba(15, 23, 42, 0.95);
+
+  /* 文本颜色 - 深色主题 */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* 边框 - 深色主题 */
+  --border-default: rgba(148, 163, 184, 0.2);
+  --border-light: rgba(148, 163, 184, 0.3);
+  --border-strong: rgba(148, 163, 184, 0.5);
+  --border-color: rgba(148, 163, 184, 0.2);
+
+  /* 阴影 - 深色主题调整 */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  
+  /* 中性色调整 */
+  --gray-50: #1e293b;
+  --gray-100: #334155;
+  --gray-200: #475569;
+  --gray-300: #64748b;
+  --gray-400: #94a3b8;
+  --gray-500: #cbd5e1;
+  --gray-600: #e2e8f0;
+  --gray-700: #f1f5f9;
+  --gray-800: #f8fafc;
+  --gray-900: #ffffff;
+}
+
+/* 适配深色模式的特定组件样式 */
+html.dark #app {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+html.dark .header,
+html.dark .status-bar {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+html.dark .header::before,
+html.dark .status-bar::before {
+  background: linear-gradient(
+    135deg,
+    rgba(79, 70, 229, 0.1) 0%,
+    rgba(6, 182, 212, 0.1) 100%
+  );
+}
+
+html.dark .modal {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+html.dark .modal-footer {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .card-preview.skeleton-anim {
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    #1e293b 50%,
+    var(--gray-100) 75%
+  );
+  background-size: 200% 100%;
+}
+
+html.dark .toggle-slider {
+  background-color: var(--gray-200); /* Darker gray for inactive switch */
+}
+
+html.dark .toggle-switch:hover .toggle-slider {
+  background-color: var(--gray-300);
+}
+
+/* 修复深色模式下的图片背景 */
+html.dark .card-preview-container,
+html.dark .card-preview {
+  background-color: #000;
+}
+
+/* 修复深色模式下的按钮文字颜色 */
+html.dark .btn-secondary,
+html.dark .btn-ghost,
+html.dark .btn-outline {
+  color: var(--text-secondary);
+}
+
+html.dark .btn-secondary:hover,
+html.dark .btn-ghost:hover {
+  color: var(--text-primary);
 }
 
 /* 动画定义 */
@@ -449,6 +560,11 @@ body {
   backdrop-filter: blur(10px);
 }
 
+/* 深色模式加载屏幕 */
+html.dark .loading-screen {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
 .loading-content {
   text-align: center;
   display: flex;
@@ -676,6 +792,10 @@ body {
   color: var(--primary);
 }
 
+html.dark .load-order-tips-highlight {
+  color: var(--primary-light);
+}
+
 .load-order-footer {
   padding: var(--spacing-5) var(--spacing-6);
   background-color: var(--bg-surface);
@@ -792,7 +912,7 @@ body {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-default);
   background: var(--bg-base);
-  color: var(--primary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -818,8 +938,14 @@ body {
 .header-right .btn-icon:hover {
   background: var(--bg-surface);
   border-color: var(--primary);
+  color: var(--primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+html.dark .header-right .btn-icon:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
 }
 
 #launch-l4d2-btn {
@@ -1042,6 +1168,12 @@ body {
   color: var(--primary);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+html.dark .tag-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--text-primary);
 }
 
 .tag-btn.active {
@@ -2903,6 +3035,45 @@ body {
   margin-bottom: 4px;
 }
 
+/* 修复深色模式下下拉菜单文字颜色 */
+html.dark .dropdown-item {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+html.dark .dropdown-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 专门修复设置标签按钮等特定按钮的颜色 */
+.dropdown-item.set-tags-btn,
+.dropdown-item.rename-btn,
+.dropdown-item.load-order-btn {
+  color: var(--text-primary) !important;
+}
+
+/* 通用Hover样式 - 仅设置背景 */
+.dropdown-item.set-tags-btn:hover,
+.dropdown-item.rename-btn:hover,
+.dropdown-item.load-order-btn:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* 浅色模式下，Hover时文字变紫 */
+html:not(.dark) .dropdown-item.set-tags-btn:hover,
+html:not(.dark) .dropdown-item.rename-btn:hover,
+html:not(.dark) .dropdown-item.load-order-btn:hover {
+  color: var(--primary) !important;
+}
+
+/* 深色模式下，Hover时文字保持白色 */
+html.dark .dropdown-item.set-tags-btn:hover,
+html.dark .dropdown-item.rename-btn:hover,
+html.dark .dropdown-item.load-order-btn:hover {
+  color: var(--text-primary) !important;
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;
@@ -2921,7 +3092,14 @@ body {
 
 .dropdown-item:hover {
   background-color: var(--bg-hover);
+}
+
+html:not(.dark) .dropdown-item:hover {
   color: var(--primary);
+}
+
+html.dark .dropdown-item:hover {
+  color: var(--text-primary);
 }
 
 .dropdown-item .btn-icon {
@@ -2959,9 +3137,22 @@ body {
 .dropdown-content .dropdown-item.open-location-btn:hover,
 .dropdown-content .dropdown-item.hide-btn:hover {
   background-color: var(--bg-hover) !important;
-  color: var(--primary) !important;
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* 浅色模式下，Hover时文字变色 */
+html:not(.dark) .dropdown-content .dropdown-item.delete-btn:hover,
+html:not(.dark) .dropdown-content .dropdown-item.open-location-btn:hover,
+html:not(.dark) .dropdown-content .dropdown-item.hide-btn:hover {
+  color: var(--primary) !important;
+}
+
+/* 深色模式下，Hover时文字保持白色 */
+html.dark .dropdown-content .dropdown-item.delete-btn:hover,
+html.dark .dropdown-content .dropdown-item.open-location-btn:hover,
+html.dark .dropdown-content .dropdown-item.hide-btn:hover {
+  color: var(--text-primary) !important;
 }
 
 .dropdown-content .dropdown-item.delete-btn:hover {
@@ -3233,8 +3424,12 @@ body {
 
 .mode-badge {
   background: rgba(79, 70, 229, 0.1);
-  color: var(--primary);
+  color: #fb923c; /* 淡橙色 */
   border-color: rgba(79, 70, 229, 0.2);
+}
+
+html.dark .mode-badge {
+  color: #fb923c; /* 淡橙色 - 深色模式 */
 }
 
 .map-badge {
@@ -3662,6 +3857,10 @@ body {
   font-weight: 600;
 }
 
+html.dark .mode-option.active {
+  color: var(--text-primary);
+}
+
 .mode-icon {
   display: flex;
   align-items: center;
@@ -3989,6 +4188,11 @@ body {
   background-color: var(--primary-100);
   color: var(--primary);
   font-weight: 500;
+}
+
+html.dark .filter-item.active {
+  background-color: var(--primary);
+  color: #ffffff;
 }
 
 /* 主内容区域 */
@@ -4367,6 +4571,11 @@ body {
   border-radius: 100px;
   font-size: 12px;
   font-weight: 500;
+}
+
+html.dark .tag-badge {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .detail-title-large {

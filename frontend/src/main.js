@@ -131,6 +131,7 @@ function initializeApp() {
   checkAndInstallUpdate();
   initModRotationState();
   initWorkshopState();
+  initTheme();
 
   // 监听IP优选事件
   // 使用一个标志位来防止重复注册（虽然 EventsOn 理论上不会重复，但为了保险）
@@ -6675,3 +6676,59 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// 深色模式管理
+function initTheme() {
+  const themeToggleBtn = document.getElementById("theme-toggle-btn");
+  if (!themeToggleBtn) return;
+
+  // 从配置加载主题，默认为系统偏好
+  const config = getConfig();
+  let isDark = config.theme === "dark";
+  
+  // 如果配置未设置，跟随系统
+  if (config.theme === undefined) {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      isDark = true;
+    }
+  }
+
+  // 应用主题
+  if (isDark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+
+  updateThemeIcon(isDark);
+
+  // 绑定切换事件
+  themeToggleBtn.addEventListener("click", () => {
+    toggleTheme();
+  });
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle("dark");
+  updateThemeIcon(isDark);
+  
+  const config = getConfig();
+  config.theme = isDark ? "dark" : "light";
+  saveConfig(config);
+}
+
+function updateThemeIcon(isDark) {
+  const btn = document.getElementById("theme-toggle-btn");
+  if (!btn) return;
+  
+  const iconContainer = btn.querySelector("svg");
+  if (!iconContainer) return;
+
+  if (isDark) {
+    // 深色模式下显示太阳图标（提示切换到浅色）
+    iconContainer.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+  } else {
+    // 浅色模式下显示月亮图标（提示切换到深色）
+    iconContainer.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  }
+}
