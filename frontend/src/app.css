@@ -3757,7 +3757,6 @@ html.dark .mode-badge {
 .map-badge:hover {
   background-color: var(--primary-50);
   border-color: var(--primary-light);
-  color: var(--primary);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
@@ -4699,4 +4698,25 @@ html.dark .tag-badge {
   line-height: 1.6;
   color: var(--text-primary);
   white-space: pre-wrap;
+}
+
+.detail-description-text a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.detail-description-text a:hover {
+  color: var(--primary-light);
+  text-decoration: underline;
+  text-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+html.dark .detail-description-text a {
+  color: var(--accent);
+}
+
+html.dark .detail-description-text a:hover {
+  color: var(--accent-light);
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
 }
